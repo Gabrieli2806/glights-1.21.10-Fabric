@@ -9,6 +9,8 @@
   "config.glights.effect.poison.tooltip": "Pulse the keyboard green while you are poisoned.",
   "config.glights.effect.frozen": "Frozen pulse",
   "config.glights.effect.frozen.tooltip": "Pulse the keyboard light blue while you are freezing.",
+  "config.glights.effect.nether_portal": "Nether portal pulse",
+  "config.glights.effect.nether_portal.tooltip": "Pulse the keyboard purple while you are waiting to enter a Nether portal.",
   "config.glights.category.hotbar": "Hotbar",
   "config.glights.hotbar.highlight_selected": "Highlight selected slot",
   "config.glights.hotbar.highlight_selected.tooltip": "Show the currently selected hotbar slot with the accent color.",

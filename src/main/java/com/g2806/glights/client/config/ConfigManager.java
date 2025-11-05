@@ -56,6 +56,7 @@ public final class ConfigManager {
         boolean underwaterEffect = true;
         boolean poisonEffect = true;
         boolean frozenEffect = true;
+        boolean netherPortalEffect = true;
         boolean highlightSelectedSlot = true;
 
         void reset() {
@@ -63,6 +64,7 @@ public final class ConfigManager {
             underwaterEffect = true;
             poisonEffect = true;
             frozenEffect = true;
+            netherPortalEffect = true;
             highlightSelectedSlot = true;
         }
     }
@@ -167,6 +169,7 @@ public final class ConfigManager {
         settingsObject.addProperty("underwaterEffect", settings.underwaterEffect);
         settingsObject.addProperty("poisonEffect", settings.poisonEffect);
         settingsObject.addProperty("frozenEffect", settings.frozenEffect);
+    settingsObject.addProperty("netherPortalEffect", settings.netherPortalEffect);
         settingsObject.addProperty("highlightSelectedSlot", settings.highlightSelectedSlot);
         root.add("settings", settingsObject);
 
@@ -249,6 +252,7 @@ public final class ConfigManager {
         settings.underwaterEffect = getBoolean(settingsObject, "underwaterEffect", settings.underwaterEffect);
         settings.poisonEffect = getBoolean(settingsObject, "poisonEffect", settings.poisonEffect);
         settings.frozenEffect = getBoolean(settingsObject, "frozenEffect", settings.frozenEffect);
+        settings.netherPortalEffect = getBoolean(settingsObject, "netherPortalEffect", settings.netherPortalEffect);
         settings.highlightSelectedSlot = getBoolean(settingsObject, "highlightSelectedSlot", settings.highlightSelectedSlot);
     }
 
@@ -307,6 +311,17 @@ public final class ConfigManager {
     public void setFrozenEffectEnabled(boolean enabled) {
         if (settings.frozenEffect != enabled) {
             settings.frozenEffect = enabled;
+            dirty = true;
+        }
+    }
+
+    public boolean isNetherPortalEffectEnabled() {
+        return settings.netherPortalEffect;
+    }
+
+    public void setNetherPortalEffectEnabled(boolean enabled) {
+        if (settings.netherPortalEffect != enabled) {
+            settings.netherPortalEffect = enabled;
             dirty = true;
         }
     }

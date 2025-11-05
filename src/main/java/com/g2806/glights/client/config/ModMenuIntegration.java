@@ -51,6 +51,12 @@ public final class ModMenuIntegration implements ModMenuApi {
                 .setTooltip(Component.translatable("config.glights.effect.frozen.tooltip"))
                 .setSaveConsumer(config::setFrozenEffectEnabled)
                 .build());
+    effects.addEntry(entryBuilder
+        .startBooleanToggle(Component.translatable("config.glights.effect.nether_portal"), config.isNetherPortalEffectEnabled())
+        .setDefaultValue(true)
+        .setTooltip(Component.translatable("config.glights.effect.nether_portal.tooltip"))
+        .setSaveConsumer(config::setNetherPortalEffectEnabled)
+        .build());
 
         ConfigCategory hotbar = builder.getOrCreateCategory(Component.translatable("config.glights.category.hotbar"));
         hotbar.addEntry(entryBuilder

@@ -11,6 +11,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.Arrays;
@@ -21,7 +23,8 @@ public final class EventHandler {
         DAMAGE_FLASH,
         UNDERWATER,
         POISON,
-        FROZEN
+    FROZEN,
+    NETHER_PORTAL
     }
 
     private final Minecraft client;
@@ -225,6 +228,9 @@ public final class EventHandler {
         if (config.isDamageEffectEnabled() && damageFlashTicks > 0) {
             return SpecialEffect.DAMAGE_FLASH;
         }
+        if (config.isNetherPortalEffectEnabled() && isWaitingForNether(player)) {
+            return SpecialEffect.NETHER_PORTAL;
+        }
         if (poisonActive) {
             return SpecialEffect.POISON;
         }
@@ -257,6 +263,9 @@ public final class EventHandler {
                 break;
             case FROZEN:
                 handler.setPulsingColor(0x76D4F5, 1500);
+                break;
+            case NETHER_PORTAL:
+                handler.setPulsingColor(0x8A2BE2, 900);
                 break;
             case NONE:
                 if (restoreBaseAfterNone) {
@@ -329,6 +338,16 @@ public final class EventHandler {
         Arrays.fill(hotbarLogiKeys, -1);
         clearSpecialEffects(true);
         resetFunctionKeyLighting();
+    }
+
+    private boolean isWaitingForNether(LocalPlayer player) {
+        if (player == null || player.level() == null) {
+            return false;
+        }
+        if (player.level().dimension().equals(Level.NETHER)) {
+            return false;
+        }
+        return player.level().getBlockState(player.blockPosition()).is(Blocks.NETHER_PORTAL);
     }
 
     private void resetFunctionKeyLighting() {
