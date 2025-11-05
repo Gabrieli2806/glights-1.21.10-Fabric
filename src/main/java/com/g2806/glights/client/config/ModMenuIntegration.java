@@ -72,6 +72,14 @@ public final class ModMenuIntegration implements ModMenuApi {
         .setSaveConsumer(color -> config.setHighlightColor(color & 0xFFFFFF))
         .build());
 
+    ConfigCategory keyColors = builder.getOrCreateCategory(Component.translatable("config.glights.category.keys"));
+    keyColors.addEntry(entryBuilder
+        .startColorField(Component.translatable("config.glights.keys.wasd_color"), config.getWasdColor())
+        .setDefaultValue(config.getDefaultWasdColor())
+        .setTooltip(Component.translatable("config.glights.keys.wasd_color.tooltip"))
+        .setSaveConsumer(color -> config.setWasdColor(color & 0xFFFFFF))
+        .build());
+
         builder.setSavingRunnable(() -> {
             config.saveIfDirty();
             if (GLightsClient.EVENTS != null) {

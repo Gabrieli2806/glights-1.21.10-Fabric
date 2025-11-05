@@ -25,11 +25,13 @@ public final class ConfigManager {
     public static final String CATEGORY_DEAD = "key.categories.dead";
     public static final String CATEGORY_INVENTORY = "key.categories.inventory";
     public static final String CATEGORY_INVENTORY_SELECTED = "key.categories.inventory.selected";
+    public static final String CATEGORY_WASD = "key.glights.special.wasd";
 
     private static final int DEFAULT_UNKNOWN_COLOR = 0xFF0000;
     private static final int DEFAULT_DEAD_COLOR = 0xFF0000;
     private static final int DEFAULT_INVENTORY_COLOR = 0x00FF00;
     private static final int DEFAULT_HIGHLIGHT_COLOR = 0xFF7F00;
+    private static final int DEFAULT_WASD_COLOR = 0xFF8C00;
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Type TYPE = new TypeToken<Map<String, String>>() { }.getType();
@@ -38,6 +40,7 @@ public final class ConfigManager {
             .put(CATEGORY_DEAD, DEFAULT_DEAD_COLOR)
             .put(CATEGORY_INVENTORY, DEFAULT_INVENTORY_COLOR)
             .put(CATEGORY_INVENTORY_SELECTED, DEFAULT_HIGHLIGHT_COLOR)
+            .put(CATEGORY_WASD, DEFAULT_WASD_COLOR)
             .put("key.categories.movement", 0x00DCFF)
             .put("key.categories.gameplay", 0xFFFFFF)
             .put("key.categories.creative", 0x8000FF)
@@ -347,5 +350,17 @@ public final class ConfigManager {
 
     public int getDefaultHighlightColor() {
         return DEFAULT_HIGHLIGHT_COLOR;
+    }
+
+    public int getWasdColor() {
+        return getColorForCategory(CATEGORY_WASD);
+    }
+
+    public void setWasdColor(int color) {
+        setColorForCategory(CATEGORY_WASD, color);
+    }
+
+    public int getDefaultWasdColor() {
+        return DEFAULT_WASD_COLOR;
     }
 }

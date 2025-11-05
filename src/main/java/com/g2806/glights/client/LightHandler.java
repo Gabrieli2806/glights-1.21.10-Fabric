@@ -108,6 +108,7 @@ public final class LightHandler {
         categories.add(ConfigManager.CATEGORY_DEAD);
         categories.add(ConfigManager.CATEGORY_INVENTORY);
         categories.add(ConfigManager.CATEGORY_INVENTORY_SELECTED);
+        categories.add(ConfigManager.CATEGORY_WASD);
         config.ensureDefaults(categories);
         config.saveIfDirty();
 
@@ -115,6 +116,7 @@ public final class LightHandler {
         for (KeyMapping binding : allKeys) {
             applyBaseColor(binding);
         }
+        applyWasdOverride();
         ensureFunctionKeyFallbacks();
     }
 
@@ -350,6 +352,17 @@ public final class LightHandler {
             int color = keysym == GLFW.GLFW_KEY_F4 ? 0 : defaultColor;
             setSolidColorOnResolvedKey(logiKey, scancode, color);
         }
+    }
+
+    private void applyWasdOverride() {
+        if (!active) {
+            return;
+        }
+        int color = config.getWasdColor();
+        setSolidColorOnKey(client.options.keyUp, color);
+        setSolidColorOnKey(client.options.keyLeft, color);
+        setSolidColorOnKey(client.options.keyDown, color);
+        setSolidColorOnKey(client.options.keyRight, color);
     }
 
     // Mojang mappings hide the active key behind reflection; Yarn exposes helper methods.

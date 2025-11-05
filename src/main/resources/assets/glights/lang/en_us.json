@@ -12,8 +12,11 @@
   "config.glights.effect.nether_portal": "Nether portal pulse",
   "config.glights.effect.nether_portal.tooltip": "Pulse the keyboard purple while you are waiting to enter a Nether portal.",
   "config.glights.category.hotbar": "Hotbar",
+  "config.glights.category.keys": "Key Colors",
   "config.glights.hotbar.highlight_selected": "Highlight selected slot",
   "config.glights.hotbar.highlight_selected.tooltip": "Show the currently selected hotbar slot with the accent color.",
   "config.glights.hotbar.highlight_color": "Highlight color",
-  "config.glights.hotbar.highlight_color.tooltip": "Pick the color used for the selected hotbar key."
+  "config.glights.hotbar.highlight_color.tooltip": "Pick the color used for the selected hotbar key.",
+  "config.glights.keys.wasd_color": "WASD color",
+  "config.glights.keys.wasd_color.tooltip": "Set the color for the movement keys (W/A/S/D)."
 }
