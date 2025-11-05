@@ -13,7 +13,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import org.lwjgl.glfw.GLFW;
 
@@ -539,9 +538,6 @@ public final class EventHandler {
 
     private boolean isWaitingForNether(LocalPlayer player) {
         if (player == null || player.level() == null) {
-            return false;
-        }
-        if (player.level().dimension().equals(Level.NETHER)) {
             return false;
         }
         return player.level().getBlockState(player.blockPosition()).is(Blocks.NETHER_PORTAL);
