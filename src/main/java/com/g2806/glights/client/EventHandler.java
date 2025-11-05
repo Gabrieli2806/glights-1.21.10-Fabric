@@ -51,11 +51,11 @@ public final class EventHandler {
     }
 
     private void onClientTick(Minecraft ignored) {
+        handleFocus();
+
         if (!handler.isActive()) {
             return;
         }
-
-        handleFocus();
 
         LocalPlayer player = client.player;
         if (player == null) {
@@ -81,10 +81,11 @@ public final class EventHandler {
             windowFocused = false;
             handler.shutdown(true);
         } else if (!windowFocused && focused) {
-            windowFocused = true;
-            handler.restart(true);
-            if (dead) {
-                handler.setSolidColor(config.getColorForCategory(ConfigManager.CATEGORY_DEAD));
+            if (handler.restart(true)) {
+                windowFocused = true;
+                if (dead) {
+                    handler.setSolidColor(config.getColorForCategory(ConfigManager.CATEGORY_DEAD));
+                }
             }
         }
     }

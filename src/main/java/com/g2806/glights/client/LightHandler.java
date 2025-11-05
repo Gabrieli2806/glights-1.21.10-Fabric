@@ -206,12 +206,13 @@ public final class LightHandler {
         LogiLED.LogiLedShutdown();
     }
 
-    public void restart(boolean silent) {
+    public boolean restart(boolean silent) {
         if (active) {
-            return;
+            initBaseLighting();
+            return true;
         }
         if (!startLedSdk(silent)) {
-            return;
+            return false;
         }
         initBaseLighting();
         for (Runnable callback : restartCallbacks) {
@@ -221,6 +222,7 @@ public final class LightHandler {
                 GLights.LOGGER.error("Restart callback threw", throwable);
             }
         }
+        return true;
     }
 
     public void addRestartCallback(Runnable callback) {
