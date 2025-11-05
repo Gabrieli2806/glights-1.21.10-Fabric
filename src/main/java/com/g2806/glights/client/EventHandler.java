@@ -30,6 +30,7 @@ public final class EventHandler {
     private final int[] hotbarScanCodes = new int[9];
     private final int[] hotbarLogiKeys = new int[9];
     private static final int F3_KEYSYM = GLFW.GLFW_KEY_F3;
+    private static final int F3_HOLD_THRESHOLD_TICKS = 5;
     private static final int F4_LOGI_KEY = LogiLED.F4;
 
     private boolean hotbarInitialized;
@@ -39,6 +40,8 @@ public final class EventHandler {
     private SpecialEffect activeEffect = SpecialEffect.NONE;
     private int damageFlashTicks;
     private boolean f3Held;
+    private int f3HoldTicks;
+    private boolean f4Lit;
 
     public EventHandler(Minecraft client, LightHandler handler, ConfigManager config) {
         this.client = client;
@@ -282,12 +285,27 @@ public final class EventHandler {
             return;
         }
         boolean currentlyHeld = InputConstants.isKeyDown(client.getWindow(), F3_KEYSYM);
-        if (currentlyHeld == f3Held) {
-            return;
+        if (currentlyHeld) {
+            if (!f3Held) {
+                f3Held = true;
+                f3HoldTicks = 0;
+            }
+            if (f3HoldTicks < F3_HOLD_THRESHOLD_TICKS) {
+                f3HoldTicks++;
+            }
+            if (f3HoldTicks >= F3_HOLD_THRESHOLD_TICKS) {
+                int color = config.getColorForCategory(ConfigManager.CATEGORY_INVENTORY);
+                handler.setSolidColorOnResolvedKey(F4_LOGI_KEY, -1, color);
+                f4Lit = true;
+            }
+        } else {
+            if (f4Lit) {
+                handler.setSolidColorOnResolvedKey(F4_LOGI_KEY, -1, 0);
+                f4Lit = false;
+            }
+            f3Held = false;
+            f3HoldTicks = 0;
         }
-        f3Held = currentlyHeld;
-    int color = currentlyHeld ? config.getColorForCategory(ConfigManager.CATEGORY_INVENTORY) : 0;
-    handler.setSolidColorOnResolvedKey(F4_LOGI_KEY, -1, color);
     }
 
     private void resetHotbarHighlight() {
@@ -315,6 +333,8 @@ public final class EventHandler {
 
     private void resetFunctionKeyLighting() {
         f3Held = false;
+        f3HoldTicks = 0;
+        f4Lit = false;
         if (handler.isActive()) {
             handler.setSolidColorOnResolvedKey(F4_LOGI_KEY, -1, 0);
         }
