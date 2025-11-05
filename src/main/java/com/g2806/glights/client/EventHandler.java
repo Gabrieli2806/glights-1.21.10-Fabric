@@ -3,6 +3,8 @@ package com.g2806.glights.client;
 import com.g2806.glights.client.config.ConfigManager;
 import com.logitech.gaming.LogiLED;
 import com.mojang.blaze3d.platform.InputConstants;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
@@ -16,6 +18,7 @@ import net.minecraft.world.level.block.Blocks;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.Arrays;
+import java.util.Random;
 
 public final class EventHandler {
     private enum SpecialEffect {
@@ -35,6 +38,7 @@ public final class EventHandler {
     private static final int F3_KEYSYM = GLFW.GLFW_KEY_F3;
     private static final int F3_HOLD_THRESHOLD_TICKS = 5;
     private static final int F4_LOGI_KEY = LogiLED.F4;
+    private static final int EFFECT_TICK_MASK = (1 << 14) - 1;
 
     private boolean hotbarInitialized;
     private boolean windowFocused = true;
@@ -45,6 +49,9 @@ public final class EventHandler {
     private boolean f3Held;
     private int f3HoldTicks;
     private boolean f4Lit;
+    private int effectTicks;
+    private int[] effectScanCodes = new int[0];
+    private final Random effectRandom = new Random();
 
     public EventHandler(Minecraft client, LightHandler handler, ConfigManager config) {
         this.client = client;
@@ -198,8 +205,13 @@ public final class EventHandler {
         Arrays.fill(hotbarScanCodes, -1);
         Arrays.fill(hotbarLogiKeys, -1);
         resetFunctionKeyLighting();
+        effectTicks = 0;
+        effectScanCodes = new int[0];
         if (activeEffect != SpecialEffect.NONE) {
             applySpecialEffect(activeEffect, false);
+        } else {
+            handler.initBaseLighting();
+            resetHotbarHighlight();
         }
     }
 
@@ -221,6 +233,9 @@ public final class EventHandler {
         SpecialEffect desired = determineDesiredEffect(player, poisonActive);
         if (desired != activeEffect) {
             applySpecialEffect(desired, true);
+        }
+        if (activeEffect != SpecialEffect.NONE) {
+            tickActiveEffect();
         }
     }
 
@@ -250,32 +265,211 @@ public final class EventHandler {
         }
 
         handler.stopEffects();
-
-        switch (effect) {
-            case DAMAGE_FLASH:
-                handler.setFlashingColor(0xFF0000, 200);
-                break;
-            case UNDERWATER:
-                handler.setPulsingColor(0x003A9D, 1200);
-                break;
-            case POISON:
-                handler.setPulsingColor(0x1BCB5D, 900);
-                break;
-            case FROZEN:
-                handler.setPulsingColor(0x76D4F5, 1500);
-                break;
-            case NETHER_PORTAL:
-                handler.setPulsingColor(0x8A2BE2, 900);
-                break;
-            case NONE:
-                if (restoreBaseAfterNone) {
-                    handler.initBaseLighting();
-                    resetHotbarHighlight();
-                }
-                break;
-        }
+        effectTicks = 0;
+        effectScanCodes = new int[0];
 
         activeEffect = effect;
+
+        if (effect == SpecialEffect.NONE) {
+            if (restoreBaseAfterNone) {
+                handler.initBaseLighting();
+                resetHotbarHighlight();
+            }
+        } else {
+            captureEffectScanCodes();
+        }
+    }
+
+    private void tickActiveEffect() {
+        if (!handler.isActive() || activeEffect == SpecialEffect.NONE) {
+            return;
+        }
+
+        effectTicks = (effectTicks + 1) & EFFECT_TICK_MASK;
+        if (effectScanCodes.length == 0) {
+            captureEffectScanCodes();
+        }
+
+        int[] scanCodes = effectScanCodes;
+        switch (activeEffect) {
+            case DAMAGE_FLASH -> runDamageRipple(scanCodes);
+            case UNDERWATER -> runUnderwaterWave(scanCodes);
+            case POISON -> runPoisonStarlight(scanCodes);
+            case FROZEN -> runFrozenBreathing();
+            case NETHER_PORTAL -> runNetherColorWave(scanCodes);
+            default -> {
+            }
+        }
+    }
+
+    private void captureEffectScanCodes() {
+        Int2IntMap colors = handler.getCurrentColors();
+        if (colors == null || colors.isEmpty()) {
+            effectScanCodes = new int[0];
+            return;
+        }
+        IntSet set = colors.keySet();
+        effectScanCodes = set.toIntArray();
+        Arrays.sort(effectScanCodes);
+    }
+
+    private void runDamageRipple(int[] scanCodes) {
+        float decay = clamp01(damageFlashTicks / 12.0f);
+        int base = blendColors(0x1A0000, 0x360000, decay);
+        int accent = blendColors(0xFF2A00, 0xFF5A00, decay);
+        handler.setSolidColor(blendColors(base, accent, 0.35f + 0.25f * decay));
+        if (scanCodes.length == 0) {
+            return;
+        }
+        int bandCount = 6;
+        int waveIndex = effectTicks % bandCount;
+        for (int i = 0; i < scanCodes.length; i++) {
+            int offset = (i + waveIndex) % bandCount;
+            float strength;
+            if (offset == 0) {
+                strength = 1.0f;
+            } else if (offset == 1 || offset == bandCount - 1) {
+                strength = 0.65f;
+            } else {
+                strength = 0.0f;
+            }
+            if (strength > 0.0f) {
+                strength *= decay;
+                int color = blendColors(base, accent, strength);
+                handler.setSolidColorOnScanCode(scanCodes[i], color);
+            }
+        }
+    }
+
+    private void runUnderwaterWave(int[] scanCodes) {
+        float swell = 0.5f + 0.5f * (float) Math.sin(effectTicks * 0.05f);
+        int base = blendColors(0x00162C, 0x003A66, swell);
+        handler.setSolidColor(base);
+        if (scanCodes.length == 0) {
+            return;
+        }
+        for (int i = 0; i < scanCodes.length; i++) {
+            float offset = effectTicks * 0.12f - i * 0.18f;
+            float wave = 0.5f + 0.5f * (float) Math.sin(offset);
+            int color = blendColors(0x003253, 0x00B2FF, wave);
+            handler.setSolidColorOnScanCode(scanCodes[i], color);
+        }
+    }
+
+    private void runPoisonStarlight(int[] scanCodes) {
+        handler.setSolidColor(blendColors(0x001904, 0x003A0B, 0.6f));
+        if (scanCodes.length == 0) {
+            return;
+        }
+        int starCount = Math.max(4, scanCodes.length / 12);
+        for (int i = 0; i < starCount; i++) {
+            int index = effectRandom.nextInt(scanCodes.length);
+            float sparkle = effectRandom.nextFloat();
+            int color = blendColors(0x047A1F, 0x7CFF8A, sparkle);
+            handler.setSolidColorOnScanCode(scanCodes[index], color);
+        }
+    }
+
+    private void runFrozenBreathing() {
+        float wave = 0.5f + 0.5f * (float) Math.sin(effectTicks * 0.08f);
+        int color = blendColors(0x152D45, 0xC9F4FF, wave);
+        handler.setSolidColor(color);
+    }
+
+    private void runNetherColorWave(int[] scanCodes) {
+        float hueBase = 0.78f + 0.04f * (float) Math.sin(effectTicks * 0.05f);
+        int base = hsvToRgb(hueBase, 0.85f, 0.35f);
+        handler.setSolidColor(base);
+        if (scanCodes.length == 0) {
+            return;
+        }
+        for (int i = 0; i < scanCodes.length; i++) {
+            float wave = 0.5f + 0.5f * (float) Math.sin(effectTicks * 0.17f - i * 0.25f);
+            float hue = 0.74f + 0.1f * wave;
+            float brightness = 0.6f + 0.3f * wave;
+            int color = hsvToRgb(hue, 0.95f, brightness);
+            handler.setSolidColorOnScanCode(scanCodes[i], color);
+        }
+    }
+
+    private static int blendColors(int from, int to, float ratio) {
+        float t = clamp01(ratio);
+        int fr = (from >> 16) & 0xFF;
+        int fg = (from >> 8) & 0xFF;
+        int fb = from & 0xFF;
+        int tr = (to >> 16) & 0xFF;
+        int tg = (to >> 8) & 0xFF;
+        int tb = to & 0xFF;
+
+        int r = Math.round(fr + (tr - fr) * t);
+        int g = Math.round(fg + (tg - fg) * t);
+        int b = Math.round(fb + (tb - fb) * t);
+        return (r << 16) | (g << 8) | b;
+    }
+
+    private static int hsvToRgb(float hue, float saturation, float value) {
+        float h = wrapHue(hue) * 6.0f;
+        int sector = (int) Math.floor(h);
+        float fraction = h - sector;
+        float p = value * (1.0f - saturation);
+        float q = value * (1.0f - saturation * fraction);
+        float t = value * (1.0f - saturation * (1.0f - fraction));
+
+        float rf;
+        float gf;
+        float bf;
+        switch (sector) {
+            case 0 -> {
+                rf = value;
+                gf = t;
+                bf = p;
+            }
+            case 1 -> {
+                rf = q;
+                gf = value;
+                bf = p;
+            }
+            case 2 -> {
+                rf = p;
+                gf = value;
+                bf = t;
+            }
+            case 3 -> {
+                rf = p;
+                gf = q;
+                bf = value;
+            }
+            case 4 -> {
+                rf = t;
+                gf = p;
+                bf = value;
+            }
+            default -> {
+                rf = value;
+                gf = p;
+                bf = q;
+            }
+        }
+
+        int r = Math.round(clamp01(rf) * 255.0f);
+        int g = Math.round(clamp01(gf) * 255.0f);
+        int b = Math.round(clamp01(bf) * 255.0f);
+        return (r << 16) | (g << 8) | b;
+    }
+
+    private static float clamp01(float value) {
+        if (value <= 0.0f) {
+            return 0.0f;
+        }
+        if (value >= 1.0f) {
+            return 1.0f;
+        }
+        return value;
+    }
+
+    private static float wrapHue(float hue) {
+        float wrapped = hue % 1.0f;
+        return wrapped < 0.0f ? wrapped + 1.0f : wrapped;
     }
 
     private void clearSpecialEffects(boolean restoreBase) {
@@ -287,6 +481,9 @@ public final class EventHandler {
             handler.initBaseLighting();
             resetHotbarHighlight();
         }
+        activeEffect = SpecialEffect.NONE;
+        effectTicks = 0;
+        effectScanCodes = new int[0];
     }
 
     private void updateFunctionKeyLighting() {
