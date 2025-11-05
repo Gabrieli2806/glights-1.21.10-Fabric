@@ -64,6 +64,7 @@ public final class ConfigManager {
         boolean frozenEffect = true;
         boolean netherPortalEffect = true;
         boolean backgroundFillEnabled = false;
+        boolean mouseLightingEnabled = true;
         boolean highlightSelectedSlot = true;
 
         void reset() {
@@ -73,6 +74,7 @@ public final class ConfigManager {
             frozenEffect = true;
             netherPortalEffect = true;
             backgroundFillEnabled = false;
+            mouseLightingEnabled = true;
             highlightSelectedSlot = true;
         }
     }
@@ -179,6 +181,7 @@ public final class ConfigManager {
         settingsObject.addProperty("frozenEffect", settings.frozenEffect);
         settingsObject.addProperty("netherPortalEffect", settings.netherPortalEffect);
         settingsObject.addProperty("backgroundFillEnabled", settings.backgroundFillEnabled);
+    settingsObject.addProperty("mouseLightingEnabled", settings.mouseLightingEnabled);
         settingsObject.addProperty("highlightSelectedSlot", settings.highlightSelectedSlot);
         root.add("settings", settingsObject);
 
@@ -263,6 +266,7 @@ public final class ConfigManager {
         settings.frozenEffect = getBoolean(settingsObject, "frozenEffect", settings.frozenEffect);
         settings.netherPortalEffect = getBoolean(settingsObject, "netherPortalEffect", settings.netherPortalEffect);
         settings.backgroundFillEnabled = getBoolean(settingsObject, "backgroundFillEnabled", settings.backgroundFillEnabled);
+        settings.mouseLightingEnabled = getBoolean(settingsObject, "mouseLightingEnabled", settings.mouseLightingEnabled);
         settings.highlightSelectedSlot = getBoolean(settingsObject, "highlightSelectedSlot", settings.highlightSelectedSlot);
     }
 
@@ -392,5 +396,16 @@ public final class ConfigManager {
 
     public int getDefaultBackgroundFillColor() {
         return DEFAULT_BACKGROUND_COLOR;
+    }
+
+    public boolean isMouseLightingEnabled() {
+        return settings.mouseLightingEnabled;
+    }
+
+    public void setMouseLightingEnabled(boolean enabled) {
+        if (settings.mouseLightingEnabled != enabled) {
+            settings.mouseLightingEnabled = enabled;
+            dirty = true;
+        }
     }
 }

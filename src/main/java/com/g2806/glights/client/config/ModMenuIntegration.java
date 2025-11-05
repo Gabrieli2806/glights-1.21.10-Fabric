@@ -74,6 +74,12 @@ public final class ModMenuIntegration implements ModMenuApi {
 
     ConfigCategory keyColors = builder.getOrCreateCategory(Component.translatable("config.glights.category.keys"));
     keyColors.addEntry(entryBuilder
+        .startBooleanToggle(Component.translatable("config.glights.keys.mouse_lighting"), config.isMouseLightingEnabled())
+        .setDefaultValue(true)
+        .setTooltip(Component.translatable("config.glights.keys.mouse_lighting.tooltip"))
+        .setSaveConsumer(config::setMouseLightingEnabled)
+        .build());
+    keyColors.addEntry(entryBuilder
         .startBooleanToggle(Component.translatable("config.glights.keys.background_fill_enabled"), config.isBackgroundFillEnabled())
         .setDefaultValue(false)
         .setTooltip(Component.translatable("config.glights.keys.background_fill_enabled.tooltip"))

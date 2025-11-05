@@ -30,6 +30,8 @@ public final class LightHandler {
     private final ConfigManager config;
     private final Int2IntOpenHashMap keyLastColor = new Int2IntOpenHashMap();
     private final List<Runnable> restartCallbacks = new CopyOnWriteArrayList<>();
+    private int currentTargetDevice = LogiLED.LOGI_DEVICETYPE_PERKEY_RGB;
+    private boolean lastMouseLightingEnabled;
 
     private static final int[] FUNCTION_KEY_KEYSYMS = new int[] {
             GLFW.GLFW_KEY_F1,
@@ -52,6 +54,7 @@ public final class LightHandler {
         this.client = client;
         this.config = config;
         this.keyLastColor.defaultReturnValue(0);
+        this.lastMouseLightingEnabled = config.isMouseLightingEnabled();
     }
 
     public static Optional<LightHandler> create(Minecraft client, ConfigManager config) {
@@ -82,6 +85,8 @@ public final class LightHandler {
         }
 
         LogiLED.LogiLedSetTargetDevice(LogiLED.LOGI_DEVICETYPE_PERKEY_RGB);
+        currentTargetDevice = LogiLED.LOGI_DEVICETYPE_PERKEY_RGB;
+        lastMouseLightingEnabled = config.isMouseLightingEnabled();
         active = true;
         setSolidColor(0x000000);
         return true;
@@ -142,7 +147,16 @@ public final class LightHandler {
             return;
         }
         int[] rgb = splitColor(color);
-        LogiLED.LogiLedSetLighting(rgb[0], rgb[1], rgb[2]);
+        boolean mouseEnabled = config.isMouseLightingEnabled();
+        if (mouseEnabled) {
+            withDevice(LogiLED.LOGI_DEVICETYPE_ALL, () -> LogiLED.LogiLedSetLighting(rgb[0], rgb[1], rgb[2]));
+        } else {
+            if (lastMouseLightingEnabled) {
+                withDevice(LogiLED.LOGI_DEVICETYPE_ALL, () -> LogiLED.LogiLedSetLighting(0, 0, 0));
+            }
+            withDevice(LogiLED.LOGI_DEVICETYPE_PERKEY_RGB, () -> LogiLED.LogiLedSetLighting(rgb[0], rgb[1], rgb[2]));
+        }
+        lastMouseLightingEnabled = mouseEnabled;
     }
 
     public void setFlashingColor(int color, int dutyCycleMs) {
@@ -150,7 +164,13 @@ public final class LightHandler {
             return;
         }
         int[] rgb = splitColor(color);
-        LogiLED.LogiLedFlashLighting(rgb[0], rgb[1], rgb[2], LogiLED.LOGI_LED_DURATION_INFINITE, dutyCycleMs);
+        boolean mouseEnabled = config.isMouseLightingEnabled();
+        int targetDevice = mouseEnabled ? LogiLED.LOGI_DEVICETYPE_ALL : LogiLED.LOGI_DEVICETYPE_PERKEY_RGB;
+        withDevice(targetDevice, () -> LogiLED.LogiLedFlashLighting(rgb[0], rgb[1], rgb[2], LogiLED.LOGI_LED_DURATION_INFINITE, dutyCycleMs));
+        if (!mouseEnabled && lastMouseLightingEnabled) {
+            withDevice(LogiLED.LOGI_DEVICETYPE_ALL, LogiLED::LogiLedStopEffects);
+        }
+        lastMouseLightingEnabled = mouseEnabled;
     }
 
     public void setPulsingColor(int color, int dutyCycleMs) {
@@ -158,7 +178,13 @@ public final class LightHandler {
             return;
         }
         int[] rgb = splitColor(color);
-        LogiLED.LogiLedPulseLighting(rgb[0], rgb[1], rgb[2], LogiLED.LOGI_LED_DURATION_INFINITE, dutyCycleMs);
+        boolean mouseEnabled = config.isMouseLightingEnabled();
+        int targetDevice = mouseEnabled ? LogiLED.LOGI_DEVICETYPE_ALL : LogiLED.LOGI_DEVICETYPE_PERKEY_RGB;
+        withDevice(targetDevice, () -> LogiLED.LogiLedPulseLighting(rgb[0], rgb[1], rgb[2], LogiLED.LOGI_LED_DURATION_INFINITE, dutyCycleMs));
+        if (!mouseEnabled && lastMouseLightingEnabled) {
+            withDevice(LogiLED.LOGI_DEVICETYPE_ALL, LogiLED::LogiLedStopEffects);
+        }
+        lastMouseLightingEnabled = mouseEnabled;
     }
 
     public void setSolidColorOnKey(KeyMapping binding, int color) {
@@ -182,13 +208,15 @@ public final class LightHandler {
             return;
         }
         int[] rgb = splitColor(color);
-        if (logiKey >= 0) {
-            LogiLED.LogiLedSetLightingForKeyWithKeyName(logiKey, rgb[0], rgb[1], rgb[2]);
-        }
-        if (scanCode > 0) {
-            keyLastColor.put(scanCode, color & 0xFFFFFF);
-            LogiLED.LogiLedSetLightingForKeyWithScanCode(scanCode, rgb[0], rgb[1], rgb[2]);
-        }
+        withDevice(LogiLED.LOGI_DEVICETYPE_PERKEY_RGB, () -> {
+            if (logiKey >= 0) {
+                LogiLED.LogiLedSetLightingForKeyWithKeyName(logiKey, rgb[0], rgb[1], rgb[2]);
+            }
+            if (scanCode > 0) {
+                keyLastColor.put(scanCode, color & 0xFFFFFF);
+                LogiLED.LogiLedSetLightingForKeyWithScanCode(scanCode, rgb[0], rgb[1], rgb[2]);
+            }
+        });
     }
 
     public void setFlashingColorOnScanCode(int scanCode, int color, int dutyCycleMs) {
@@ -196,7 +224,7 @@ public final class LightHandler {
             return;
         }
         int[] rgb = splitColor(color);
-        LogiLED.LogiLedFlashSingleKey(scanCode, rgb[0], rgb[1], rgb[2], dutyCycleMs, dutyCycleMs);
+        withDevice(LogiLED.LOGI_DEVICETYPE_PERKEY_RGB, () -> LogiLED.LogiLedFlashSingleKey(scanCode, rgb[0], rgb[1], rgb[2], dutyCycleMs, dutyCycleMs));
     }
 
     public void setPulsingColorOnScanCode(int scanCode, int color, int dutyCycleMs) {
@@ -205,29 +233,31 @@ public final class LightHandler {
         }
         int[] rgb = splitColor(color);
         int[] previous = splitColor(keyLastColor.get(scanCode));
-        LogiLED.LogiLedPulseSingleKey(scanCode, previous[0], previous[1], previous[2], rgb[0], rgb[1], rgb[2], dutyCycleMs, true);
+        withDevice(LogiLED.LOGI_DEVICETYPE_PERKEY_RGB, () -> LogiLED.LogiLedPulseSingleKey(scanCode, previous[0], previous[1], previous[2], rgb[0], rgb[1], rgb[2], dutyCycleMs, true));
     }
 
     public void stopEffects() {
         if (!active) {
             return;
         }
-        LogiLED.LogiLedStopEffects();
+        withDevice(LogiLED.LOGI_DEVICETYPE_ALL, LogiLED::LogiLedStopEffects);
     }
 
     public void saveCurrentLighting() {
         if (!active) {
             return;
         }
-        LogiLED.LogiLedSaveCurrentLighting();
+        int target = config.isMouseLightingEnabled() ? LogiLED.LOGI_DEVICETYPE_ALL : LogiLED.LOGI_DEVICETYPE_PERKEY_RGB;
+        withDevice(target, LogiLED::LogiLedSaveCurrentLighting);
     }
 
     public void restoreLastLighting() {
         if (!active) {
             return;
         }
-        LogiLED.LogiLedStopEffects();
-        LogiLED.LogiLedRestoreLighting();
+        withDevice(LogiLED.LOGI_DEVICETYPE_ALL, LogiLED::LogiLedStopEffects);
+        int target = config.isMouseLightingEnabled() ? LogiLED.LOGI_DEVICETYPE_ALL : LogiLED.LOGI_DEVICETYPE_PERKEY_RGB;
+        withDevice(target, LogiLED::LogiLedRestoreLighting);
         initBaseLighting();
     }
 
@@ -239,6 +269,8 @@ public final class LightHandler {
             GLights.LOGGER.info("Shutting down Logitech LED SDK");
         }
         active = false;
+        currentTargetDevice = LogiLED.LOGI_DEVICETYPE_PERKEY_RGB;
+        lastMouseLightingEnabled = config.isMouseLightingEnabled();
         LogiLED.LogiLedShutdown();
     }
 
@@ -442,6 +474,31 @@ public final class LightHandler {
                 Math.round(green / 255.0F * 100.0F),
                 Math.round(blue / 255.0F * 100.0F)
         };
+    }
+
+    private void withDevice(int targetDevice, Runnable action) {
+        if (!active || action == null) {
+            return;
+        }
+        int previous = currentTargetDevice;
+        if (previous != targetDevice) {
+            if (!LogiLED.LogiLedSetTargetDevice(targetDevice)) {
+                GLights.LOGGER.warn("Failed to switch Logitech target device to {}", targetDevice);
+                return;
+            }
+            currentTargetDevice = targetDevice;
+        }
+        try {
+            action.run();
+        } finally {
+            if (previous != targetDevice) {
+                if (LogiLED.LogiLedSetTargetDevice(previous)) {
+                    currentTargetDevice = previous;
+                } else {
+                    GLights.LOGGER.warn("Failed to restore Logitech target device to {}", previous);
+                }
+            }
+        }
     }
 
     private static String resolveCategory(KeyMapping binding) {
