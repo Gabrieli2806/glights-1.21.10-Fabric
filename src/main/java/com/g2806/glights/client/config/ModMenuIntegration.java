@@ -34,6 +34,12 @@ public final class ModMenuIntegration implements ModMenuApi {
         .setSaveConsumer(config::setDamageEffectEnabled)
         .build());
     effects.addEntry(entryBuilder
+        .startBooleanToggle(Component.translatable("config.glights.effect.low_health"), config.isLowHealthBlinkEnabled())
+        .setDefaultValue(true)
+        .setTooltip(Component.translatable("config.glights.effect.low_health.tooltip"))
+        .setSaveConsumer(config::setLowHealthBlinkEnabled)
+        .build());
+    effects.addEntry(entryBuilder
         .startBooleanToggle(Component.translatable("config.glights.effect.underwater"), config.isUnderwaterEffectEnabled())
         .setDefaultValue(true)
         .setTooltip(Component.translatable("config.glights.effect.underwater.tooltip"))

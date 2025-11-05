@@ -22,12 +22,13 @@ import java.util.Random;
 public final class EventHandler {
     private enum SpecialEffect {
         NONE,
-        DAMAGE_FLASH,
-        UNDERWATER,
-        POISON,
-        WITHER,
-        FROZEN,
-        NETHER_PORTAL
+    DAMAGE_FLASH,
+    LOW_HEALTH,
+    UNDERWATER,
+    POISON,
+    WITHER,
+    FROZEN,
+    NETHER_PORTAL
     }
 
     private final Minecraft client;
@@ -222,16 +223,17 @@ public final class EventHandler {
     private void updateSpecialEffects(LocalPlayer player) {
         boolean poisonActive = config.isPoisonEffectEnabled() && player.hasEffect(MobEffects.POISON);
         boolean witherActive = config.isWitherEffectEnabled() && player.hasEffect(MobEffects.WITHER);
+        boolean lowHealthActive = config.isLowHealthBlinkEnabled() && isLowHealth(player);
 
-        if (config.isDamageEffectEnabled() && !poisonActive && !witherActive && player.hurtTime > 0) {
+        if (config.isDamageEffectEnabled() && !poisonActive && !witherActive && !lowHealthActive && player.hurtTime > 0) {
             damageFlashTicks = 12;
-        } else if (!config.isDamageEffectEnabled() || poisonActive || witherActive) {
+        } else if (!config.isDamageEffectEnabled() || poisonActive || witherActive || lowHealthActive) {
             damageFlashTicks = 0;
         } else if (damageFlashTicks > 0) {
             damageFlashTicks--;
         }
 
-        SpecialEffect desired = determineDesiredEffect(player, poisonActive, witherActive);
+        SpecialEffect desired = determineDesiredEffect(player, poisonActive, witherActive, lowHealthActive);
         if (desired != activeEffect) {
             applySpecialEffect(desired, true);
         }
@@ -240,9 +242,12 @@ public final class EventHandler {
         }
     }
 
-    private SpecialEffect determineDesiredEffect(LocalPlayer player, boolean poisonActive, boolean witherActive) {
+    private SpecialEffect determineDesiredEffect(LocalPlayer player, boolean poisonActive, boolean witherActive, boolean lowHealthActive) {
         if (config.isDamageEffectEnabled() && damageFlashTicks > 0) {
             return SpecialEffect.DAMAGE_FLASH;
+        }
+        if (lowHealthActive) {
+            return SpecialEffect.LOW_HEALTH;
         }
         if (config.isNetherPortalEffectEnabled() && isWaitingForNether(player)) {
             return SpecialEffect.NETHER_PORTAL;
@@ -298,6 +303,7 @@ public final class EventHandler {
         int[] scanCodes = effectScanCodes;
         switch (activeEffect) {
             case DAMAGE_FLASH -> runDamageRipple(scanCodes);
+            case LOW_HEALTH -> runLowHealthBlink();
             case UNDERWATER -> runUnderwaterWave(scanCodes);
             case POISON -> runPoisonStarlight(scanCodes);
             case WITHER -> runWitherEcho(scanCodes);
@@ -376,6 +382,12 @@ public final class EventHandler {
         }
     }
 
+    private void runLowHealthBlink() {
+        int phase = (effectTicks / 3) & 1;
+        int color = phase == 0 ? 0xFF0000 : 0x000000;
+        handler.setSolidColor(color);
+    }
+
     private void runWitherEcho(int[] scanCodes) {
         float swell = 0.5f + 0.5f * (float) Math.sin(effectTicks * 0.045f + 0.6f);
         int base = blendColors(0x050007, 0x160022, swell);
@@ -422,6 +434,19 @@ public final class EventHandler {
             int color = hsvToRgb(hue, 0.95f, brightness);
             handler.setSolidColorOnScanCode(scanCodes[i], color);
         }
+    }
+
+    private static boolean isLowHealth(LocalPlayer player) {
+        if (player == null) {
+            return false;
+        }
+        if (player.isCreative() || player.isSpectator()) {
+            return false;
+        }
+        if (player.isDeadOrDying() || player.getHealth() <= 0.0F) {
+            return false;
+        }
+        return player.getHealth() + player.getAbsorptionAmount() <= 4.0F;
     }
 
     private static int blendColors(int from, int to, float ratio) {

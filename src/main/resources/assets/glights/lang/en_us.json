@@ -3,6 +3,8 @@
   "config.glights.category.effects": "Lighting Effects",
   "config.glights.effect.damage": "Damage flash",
   "config.glights.effect.damage.tooltip": "Blink the keyboard red when you take damage.",
+  "config.glights.effect.low_health": "Low health alarm",
+  "config.glights.effect.low_health.tooltip": "Blink the keyboard red and black rapidly when you drop to two hearts.",
   "config.glights.effect.underwater": "Underwater pulse",
   "config.glights.effect.underwater.tooltip": "Pulse the keyboard blue while you are underwater.",
   "config.glights.effect.poison": "Poison pulse",

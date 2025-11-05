@@ -64,6 +64,7 @@ public final class ConfigManager {
         boolean frozenEffect = true;
         boolean netherPortalEffect = true;
         boolean witherEffect = true;
+        boolean lowHealthBlink = true;
         boolean backgroundFillEnabled = false;
         boolean mouseLightingEnabled = true;
         boolean highlightSelectedSlot = true;
@@ -75,6 +76,7 @@ public final class ConfigManager {
             frozenEffect = true;
             netherPortalEffect = true;
             witherEffect = true;
+            lowHealthBlink = true;
             backgroundFillEnabled = false;
             mouseLightingEnabled = true;
             highlightSelectedSlot = true;
@@ -183,6 +185,7 @@ public final class ConfigManager {
         settingsObject.addProperty("frozenEffect", settings.frozenEffect);
         settingsObject.addProperty("netherPortalEffect", settings.netherPortalEffect);
     settingsObject.addProperty("witherEffect", settings.witherEffect);
+    settingsObject.addProperty("lowHealthBlink", settings.lowHealthBlink);
         settingsObject.addProperty("backgroundFillEnabled", settings.backgroundFillEnabled);
     settingsObject.addProperty("mouseLightingEnabled", settings.mouseLightingEnabled);
         settingsObject.addProperty("highlightSelectedSlot", settings.highlightSelectedSlot);
@@ -269,6 +272,7 @@ public final class ConfigManager {
         settings.frozenEffect = getBoolean(settingsObject, "frozenEffect", settings.frozenEffect);
         settings.netherPortalEffect = getBoolean(settingsObject, "netherPortalEffect", settings.netherPortalEffect);
         settings.witherEffect = getBoolean(settingsObject, "witherEffect", settings.witherEffect);
+        settings.lowHealthBlink = getBoolean(settingsObject, "lowHealthBlink", settings.lowHealthBlink);
         settings.backgroundFillEnabled = getBoolean(settingsObject, "backgroundFillEnabled", settings.backgroundFillEnabled);
         settings.mouseLightingEnabled = getBoolean(settingsObject, "mouseLightingEnabled", settings.mouseLightingEnabled);
         settings.highlightSelectedSlot = getBoolean(settingsObject, "highlightSelectedSlot", settings.highlightSelectedSlot);
@@ -420,6 +424,17 @@ public final class ConfigManager {
     public void setMouseLightingEnabled(boolean enabled) {
         if (settings.mouseLightingEnabled != enabled) {
             settings.mouseLightingEnabled = enabled;
+            dirty = true;
+        }
+    }
+
+    public boolean isLowHealthBlinkEnabled() {
+        return settings.lowHealthBlink;
+    }
+
+    public void setLowHealthBlinkEnabled(boolean enabled) {
+        if (settings.lowHealthBlink != enabled) {
+            settings.lowHealthBlink = enabled;
             dirty = true;
         }
     }
