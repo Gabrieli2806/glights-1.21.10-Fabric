@@ -31,6 +31,21 @@ public final class LightHandler {
     private final Int2IntOpenHashMap keyLastColor = new Int2IntOpenHashMap();
     private final List<Runnable> restartCallbacks = new CopyOnWriteArrayList<>();
 
+    private static final int[] FUNCTION_KEY_KEYSYMS = new int[] {
+            GLFW.GLFW_KEY_F1,
+            GLFW.GLFW_KEY_F2,
+            GLFW.GLFW_KEY_F3,
+            GLFW.GLFW_KEY_F4,
+            GLFW.GLFW_KEY_F5,
+            GLFW.GLFW_KEY_F6,
+            GLFW.GLFW_KEY_F7,
+            GLFW.GLFW_KEY_F8,
+            GLFW.GLFW_KEY_F9,
+            GLFW.GLFW_KEY_F10,
+            GLFW.GLFW_KEY_F11,
+            GLFW.GLFW_KEY_F12
+    };
+
     private boolean active;
 
     private LightHandler(Minecraft client, ConfigManager config) {
@@ -100,19 +115,22 @@ public final class LightHandler {
         for (KeyMapping binding : allKeys) {
             applyBaseColor(binding);
         }
+        ensureFunctionKeyFallbacks();
     }
 
     public void applyBaseColor(KeyMapping binding) {
         if (!active || binding == null) {
             return;
         }
+
         int scanCode = resolveScanCode(binding);
-        if (scanCode <= 0) {
+        int logiKey = resolveLogiKey(binding);
+        if (scanCode <= 0 && logiKey < 0) {
             return;
         }
 
         int color = config.getColorForCategory(resolveCategory(binding));
-        setSolidColorOnScanCode(scanCode, color);
+        setSolidColorOnResolvedKey(logiKey, scanCode, color);
     }
 
     public void setSolidColor(int color) {
@@ -140,19 +158,33 @@ public final class LightHandler {
     }
 
     public void setSolidColorOnKey(KeyMapping binding, int color) {
-        if (binding == null) {
+        if (!active || binding == null) {
             return;
         }
-        setSolidColorOnScanCode(resolveScanCode(binding), color);
+        int scanCode = resolveScanCode(binding);
+        int logiKey = resolveLogiKey(binding);
+        if (scanCode <= 0 && logiKey < 0) {
+            return;
+        }
+        setSolidColorOnResolvedKey(logiKey, scanCode, color);
     }
 
     public void setSolidColorOnScanCode(int scanCode, int color) {
-        if (!active || scanCode <= 0) {
+        setSolidColorOnResolvedKey(-1, scanCode, color);
+    }
+
+    public void setSolidColorOnResolvedKey(int logiKey, int scanCode, int color) {
+        if (!active) {
             return;
         }
         int[] rgb = splitColor(color);
-        keyLastColor.put(scanCode, color & 0xFFFFFF);
-        LogiLED.LogiLedSetLightingForKeyWithScanCode(scanCode, rgb[0], rgb[1], rgb[2]);
+        if (logiKey >= 0) {
+            LogiLED.LogiLedSetLightingForKeyWithKeyName(logiKey, rgb[0], rgb[1], rgb[2]);
+        }
+        if (scanCode > 0) {
+            keyLastColor.put(scanCode, color & 0xFFFFFF);
+            LogiLED.LogiLedSetLightingForKeyWithScanCode(scanCode, rgb[0], rgb[1], rgb[2]);
+        }
     }
 
     public void setFlashingColorOnScanCode(int scanCode, int color, int dutyCycleMs) {
@@ -258,6 +290,66 @@ public final class LightHandler {
             return scancode > 0 ? scancode : code;
         }
         return code;
+    }
+
+    public int resolveLogiKey(KeyMapping binding) {
+        if (binding == null) {
+            return -1;
+        }
+        InputConstants.Key key = resolveActiveKey(binding);
+        return mapKeyToLogiKey(key);
+    }
+
+    private static int mapKeyToLogiKey(InputConstants.Key key) {
+        if (key == null || key.getType() != InputConstants.Type.KEYSYM) {
+            return -1;
+        }
+        return switch (key.getValue()) {
+            case GLFW.GLFW_KEY_ESCAPE -> LogiLED.ESC;
+            case GLFW.GLFW_KEY_F1 -> LogiLED.F1;
+            case GLFW.GLFW_KEY_F2 -> LogiLED.F2;
+            case GLFW.GLFW_KEY_F3 -> LogiLED.F3;
+            case GLFW.GLFW_KEY_F4 -> LogiLED.F4;
+            case GLFW.GLFW_KEY_F5 -> LogiLED.F5;
+            case GLFW.GLFW_KEY_F6 -> LogiLED.F6;
+            case GLFW.GLFW_KEY_F7 -> LogiLED.F7;
+            case GLFW.GLFW_KEY_F8 -> LogiLED.F8;
+            case GLFW.GLFW_KEY_F9 -> LogiLED.F9;
+            case GLFW.GLFW_KEY_F10 -> LogiLED.F10;
+            case GLFW.GLFW_KEY_F11 -> LogiLED.F11;
+            case GLFW.GLFW_KEY_F12 -> LogiLED.F12;
+            case GLFW.GLFW_KEY_GRAVE_ACCENT -> LogiLED.TILDE;
+            case GLFW.GLFW_KEY_1 -> LogiLED.ONE;
+            case GLFW.GLFW_KEY_2 -> LogiLED.TWO;
+            case GLFW.GLFW_KEY_3 -> LogiLED.THREE;
+            case GLFW.GLFW_KEY_4 -> LogiLED.FOUR;
+            case GLFW.GLFW_KEY_5 -> LogiLED.FIVE;
+            case GLFW.GLFW_KEY_6 -> LogiLED.SIX;
+            case GLFW.GLFW_KEY_7 -> LogiLED.SEVEN;
+            case GLFW.GLFW_KEY_8 -> LogiLED.EIGHT;
+            case GLFW.GLFW_KEY_9 -> LogiLED.NINE;
+            case GLFW.GLFW_KEY_0 -> LogiLED.ZERO;
+            case GLFW.GLFW_KEY_MINUS -> LogiLED.MINUS;
+            case GLFW.GLFW_KEY_EQUAL -> LogiLED.EQUALS;
+            default -> -1;
+        };
+    }
+
+    private void ensureFunctionKeyFallbacks() {
+        if (!active) {
+            return;
+        }
+        int defaultColor = config.getColorForCategory(ConfigManager.CATEGORY_INVENTORY);
+        for (int keysym : FUNCTION_KEY_KEYSYMS) {
+            int scancode = GLFW.glfwGetKeyScancode(keysym);
+            if (scancode > 0 && keyLastColor.containsKey(scancode)) {
+                continue;
+            }
+            InputConstants.Key key = InputConstants.Type.KEYSYM.getOrCreate(keysym);
+            int logiKey = mapKeyToLogiKey(key);
+            int color = keysym == GLFW.GLFW_KEY_F4 ? 0 : defaultColor;
+            setSolidColorOnResolvedKey(logiKey, scancode, color);
+        }
     }
 
     // Mojang mappings hide the active key behind reflection; Yarn exposes helper methods.

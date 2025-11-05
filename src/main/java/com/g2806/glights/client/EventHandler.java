@@ -1,6 +1,8 @@
 package com.g2806.glights.client;
 
 import com.g2806.glights.client.config.ConfigManager;
+import com.logitech.gaming.LogiLED;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
@@ -9,6 +11,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.effect.MobEffects;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.Arrays;
 
@@ -25,6 +28,9 @@ public final class EventHandler {
     private final LightHandler handler;
     private final ConfigManager config;
     private final int[] hotbarScanCodes = new int[9];
+    private final int[] hotbarLogiKeys = new int[9];
+    private static final int F3_KEYSYM = GLFW.GLFW_KEY_F3;
+    private static final int F4_LOGI_KEY = LogiLED.F4;
 
     private boolean hotbarInitialized;
     private boolean windowFocused = true;
@@ -32,12 +38,14 @@ public final class EventHandler {
     private int lastSelectedSlot = -1;
     private SpecialEffect activeEffect = SpecialEffect.NONE;
     private int damageFlashTicks;
+    private boolean f3Held;
 
     public EventHandler(Minecraft client, LightHandler handler, ConfigManager config) {
         this.client = client;
         this.handler = handler;
         this.config = config;
         Arrays.fill(hotbarScanCodes, -1);
+        Arrays.fill(hotbarLogiKeys, -1);
 
         handler.addRestartCallback(this::onHandlerRestart);
     }
@@ -71,12 +79,15 @@ public final class EventHandler {
         if (activeEffect == SpecialEffect.NONE) {
             handleSelectedSlot(player);
         }
+
+        updateFunctionKeyLighting();
     }
 
     private void handleFocus() {
         boolean focused = client.isWindowActive();
         if (windowFocused && !focused) {
             windowFocused = false;
+            resetFunctionKeyLighting();
             handler.shutdown(true);
         } else if (!windowFocused && focused) {
             if (handler.restart(true)) {
@@ -95,6 +106,7 @@ public final class EventHandler {
         KeyMapping[] bindings = client.options.keyHotbarSlots;
         for (int i = 0; i < bindings.length && i < hotbarScanCodes.length; i++) {
             hotbarScanCodes[i] = handler.resolveScanCode(bindings[i]);
+            hotbarLogiKeys[i] = handler.resolveLogiKey(bindings[i]);
         }
         hotbarInitialized = true;
     }
@@ -117,8 +129,9 @@ public final class EventHandler {
         if (!config.isHighlightSelectedSlot()) {
             if (lastSelectedSlot >= 0) {
                 int previousCode = hotbarScanCodes[lastSelectedSlot];
-                if (previousCode > 0) {
-                    handler.setSolidColorOnScanCode(previousCode, config.getColorForCategory(ConfigManager.CATEGORY_INVENTORY));
+                int previousLogiKey = hotbarLogiKeys[lastSelectedSlot];
+                if (previousCode > 0 || previousLogiKey >= 0) {
+                    handler.setSolidColorOnResolvedKey(previousLogiKey, previousCode, config.getColorForCategory(ConfigManager.CATEGORY_INVENTORY));
                 }
                 lastSelectedSlot = -1;
             }
@@ -133,15 +146,17 @@ public final class EventHandler {
         if (lastSelectedSlot != slot) {
             if (lastSelectedSlot >= 0) {
                 int previousCode = hotbarScanCodes[lastSelectedSlot];
-                if (previousCode > 0) {
-                    handler.setSolidColorOnScanCode(previousCode, config.getColorForCategory(ConfigManager.CATEGORY_INVENTORY));
+                int previousLogiKey = hotbarLogiKeys[lastSelectedSlot];
+                if (previousCode > 0 || previousLogiKey >= 0) {
+                    handler.setSolidColorOnResolvedKey(previousLogiKey, previousCode, config.getColorForCategory(ConfigManager.CATEGORY_INVENTORY));
                 }
             }
 
             lastSelectedSlot = slot;
             int code = hotbarScanCodes[slot];
-            if (code > 0) {
-                handler.setSolidColorOnScanCode(code, config.getHighlightColor());
+            int logiKey = hotbarLogiKeys[slot];
+            if (code > 0 || logiKey >= 0) {
+                handler.setSolidColorOnResolvedKey(logiKey, code, config.getHighlightColor());
             }
         }
     }
@@ -151,6 +166,8 @@ public final class EventHandler {
         lastSelectedSlot = -1;
         hotbarInitialized = false;
         Arrays.fill(hotbarScanCodes, -1);
+        Arrays.fill(hotbarLogiKeys, -1);
+        resetFunctionKeyLighting();
         clearSpecialEffects(false);
         if (this.handler.isActive()) {
             this.handler.initBaseLighting();
@@ -165,12 +182,16 @@ public final class EventHandler {
         lastSelectedSlot = -1;
         hotbarInitialized = false;
         Arrays.fill(hotbarScanCodes, -1);
+        Arrays.fill(hotbarLogiKeys, -1);
+        resetFunctionKeyLighting();
     }
 
     private void onHandlerRestart() {
         hotbarInitialized = false;
         lastSelectedSlot = -1;
         Arrays.fill(hotbarScanCodes, -1);
+        Arrays.fill(hotbarLogiKeys, -1);
+        resetFunctionKeyLighting();
         if (activeEffect != SpecialEffect.NONE) {
             applySpecialEffect(activeEffect, false);
         }
@@ -256,6 +277,19 @@ public final class EventHandler {
         }
     }
 
+    private void updateFunctionKeyLighting() {
+        if (!handler.isActive()) {
+            return;
+        }
+        boolean currentlyHeld = InputConstants.isKeyDown(client.getWindow(), F3_KEYSYM);
+        if (currentlyHeld == f3Held) {
+            return;
+        }
+        f3Held = currentlyHeld;
+    int color = currentlyHeld ? config.getColorForCategory(ConfigManager.CATEGORY_INVENTORY) : 0;
+    handler.setSolidColorOnResolvedKey(F4_LOGI_KEY, -1, color);
+    }
+
     private void resetHotbarHighlight() {
         if (!config.isHighlightSelectedSlot()) {
             return;
@@ -264,8 +298,9 @@ public final class EventHandler {
             return;
         }
         int code = hotbarScanCodes[lastSelectedSlot];
-        if (code > 0) {
-            handler.setSolidColorOnScanCode(code, config.getHighlightColor());
+        int logiKey = hotbarLogiKeys[lastSelectedSlot];
+        if (code > 0 || logiKey >= 0) {
+            handler.setSolidColorOnResolvedKey(logiKey, code, config.getHighlightColor());
         }
     }
 
@@ -273,6 +308,15 @@ public final class EventHandler {
         hotbarInitialized = false;
         lastSelectedSlot = -1;
         Arrays.fill(hotbarScanCodes, -1);
+        Arrays.fill(hotbarLogiKeys, -1);
         clearSpecialEffects(true);
+        resetFunctionKeyLighting();
+    }
+
+    private void resetFunctionKeyLighting() {
+        f3Held = false;
+        if (handler.isActive()) {
+            handler.setSolidColorOnResolvedKey(F4_LOGI_KEY, -1, 0);
+        }
     }
 }
