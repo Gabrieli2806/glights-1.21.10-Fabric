@@ -4,11 +4,11 @@ import com.g2806.glights.client.config.ConfigManager;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.effect.MobEffects;
 
 import java.util.Arrays;
 
@@ -21,7 +21,7 @@ public final class EventHandler {
         FROZEN
     }
 
-    private final MinecraftClient client;
+    private final Minecraft client;
     private final LightHandler handler;
     private final ConfigManager config;
     private final int[] hotbarScanCodes = new int[9];
@@ -33,7 +33,7 @@ public final class EventHandler {
     private SpecialEffect activeEffect = SpecialEffect.NONE;
     private int damageFlashTicks;
 
-    public EventHandler(MinecraftClient client, LightHandler handler, ConfigManager config) {
+    public EventHandler(Minecraft client, LightHandler handler, ConfigManager config) {
         this.client = client;
         this.handler = handler;
         this.config = config;
@@ -48,14 +48,14 @@ public final class EventHandler {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, clientInstance) -> onDisconnect(handler, clientInstance));
     }
 
-    private void onClientTick(MinecraftClient ignored) {
+    private void onClientTick(Minecraft ignored) {
         if (!handler.isActive()) {
             return;
         }
 
         handleFocus();
 
-        ClientPlayerEntity player = client.player;
+        LocalPlayer player = client.player;
         if (player == null) {
             return;
         }
@@ -74,7 +74,7 @@ public final class EventHandler {
     }
 
     private void handleFocus() {
-        boolean focused = client.isWindowFocused();
+        boolean focused = client.isWindowActive();
         if (windowFocused && !focused) {
             windowFocused = false;
             handler.shutdown(true);
@@ -91,14 +91,14 @@ public final class EventHandler {
         if (hotbarInitialized) {
             return;
         }
-        KeyBinding[] bindings = client.options.hotbarKeys;
+        KeyMapping[] bindings = client.options.keyHotbarSlots;
         for (int i = 0; i < bindings.length && i < hotbarScanCodes.length; i++) {
             hotbarScanCodes[i] = handler.resolveScanCode(bindings[i]);
         }
         hotbarInitialized = true;
     }
 
-    private void handleDeathState(ClientPlayerEntity player) {
+    private void handleDeathState(LocalPlayer player) {
         boolean currentlyDead = isPlayerDead(player);
         if (!dead && currentlyDead) {
             dead = true;
@@ -112,7 +112,7 @@ public final class EventHandler {
         }
     }
 
-    private void handleSelectedSlot(ClientPlayerEntity player) {
+    private void handleSelectedSlot(LocalPlayer player) {
     int slot = player.getInventory().getSelectedSlot();
         if (slot < 0 || slot >= hotbarScanCodes.length) {
             return;
@@ -134,7 +134,7 @@ public final class EventHandler {
         }
     }
 
-    private void onJoin(ClientPlayNetworkHandler handler, PacketSender sender, MinecraftClient client) {
+    private void onJoin(ClientPacketListener handler, PacketSender sender, Minecraft client) {
         dead = false;
         lastSelectedSlot = -1;
         hotbarInitialized = false;
@@ -145,7 +145,7 @@ public final class EventHandler {
         }
     }
 
-    private void onDisconnect(ClientPlayNetworkHandler handler, MinecraftClient client) {
+    private void onDisconnect(ClientPacketListener handler, Minecraft client) {
         if (dead) {
             dead = false;
             this.handler.restoreLastLighting();
@@ -164,11 +164,11 @@ public final class EventHandler {
         }
     }
 
-    private static boolean isPlayerDead(ClientPlayerEntity player) {
-        return player.isDead() || player.getHealth() <= 0.0F || player.isRemoved();
+    private static boolean isPlayerDead(LocalPlayer player) {
+        return player.isDeadOrDying() || player.getHealth() <= 0.0F || player.isRemoved();
     }
 
-    private void updateSpecialEffects(ClientPlayerEntity player) {
+    private void updateSpecialEffects(LocalPlayer player) {
         if (player.hurtTime > 0) {
             damageFlashTicks = 12;
         } else if (damageFlashTicks > 0) {
@@ -181,17 +181,17 @@ public final class EventHandler {
         }
     }
 
-    private SpecialEffect determineDesiredEffect(ClientPlayerEntity player) {
+    private SpecialEffect determineDesiredEffect(LocalPlayer player) {
         if (damageFlashTicks > 0) {
             return SpecialEffect.DAMAGE_FLASH;
         }
-        if (player.hasStatusEffect(StatusEffects.POISON)) {
+        if (player.hasEffect(MobEffects.POISON)) {
             return SpecialEffect.POISON;
         }
-        if (player.getFrozenTicks() > 0) {
+        if (player.getTicksFrozen() > 0) {
             return SpecialEffect.FROZEN;
         }
-        if (player.isSubmergedInWater()) {
+        if (player.isUnderWater()) {
             return SpecialEffect.UNDERWATER;
         }
         return SpecialEffect.NONE;

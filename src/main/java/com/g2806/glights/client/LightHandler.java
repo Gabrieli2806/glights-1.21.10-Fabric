@@ -3,14 +3,15 @@ package com.g2806.glights.client;
 import com.g2806.glights.GLights;
 import com.g2806.glights.client.config.ConfigManager;
 import com.logitech.gaming.LogiLED;
+import com.mojang.blaze3d.platform.InputConstants;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.util.InputUtil;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
 import org.lwjgl.glfw.GLFW;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -19,32 +20,26 @@ import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public final class LightHandler {
-    private static final Field CATEGORY_TRANSLATION_FIELD;
+    private static Field CATEGORY_NAME_FIELD;
+    private static Method ACTIVE_KEY_METHOD;
+    private static boolean ACTIVE_KEY_METHOD_RESOLVED;
+    private static Field ACTIVE_KEY_FIELD;
+    private static boolean ACTIVE_KEY_FIELD_RESOLVED;
 
-    static {
-        Field field = null;
-        try {
-            field = KeyBinding.Category.class.getDeclaredField("translationKey");
-            field.setAccessible(true);
-        } catch (ReflectiveOperationException ignored) {
-        }
-        CATEGORY_TRANSLATION_FIELD = field;
-    }
-
-    private final MinecraftClient client;
+    private final Minecraft client;
     private final ConfigManager config;
     private final Int2IntOpenHashMap keyLastColor = new Int2IntOpenHashMap();
     private final List<Runnable> restartCallbacks = new CopyOnWriteArrayList<>();
 
     private boolean active;
 
-    private LightHandler(MinecraftClient client, ConfigManager config) {
+    private LightHandler(Minecraft client, ConfigManager config) {
         this.client = client;
         this.config = config;
         this.keyLastColor.defaultReturnValue(0);
     }
 
-    public static Optional<LightHandler> create(MinecraftClient client, ConfigManager config) {
+    public static Optional<LightHandler> create(Minecraft client, ConfigManager config) {
         Objects.requireNonNull(client, "client");
         Objects.requireNonNull(config, "config");
 
@@ -86,9 +81,9 @@ public final class LightHandler {
             return;
         }
 
-        KeyBinding[] allKeys = client.options.allKeys;
+        KeyMapping[] allKeys = client.options.keyMappings;
         Collection<String> categories = new ArrayList<>(allKeys.length + 4);
-        for (KeyBinding binding : allKeys) {
+        for (KeyMapping binding : allKeys) {
             if (binding == null) {
                 continue;
             }
@@ -102,12 +97,12 @@ public final class LightHandler {
         config.saveIfDirty();
 
         keyLastColor.clear();
-        for (KeyBinding binding : allKeys) {
+        for (KeyMapping binding : allKeys) {
             applyBaseColor(binding);
         }
     }
 
-    public void applyBaseColor(KeyBinding binding) {
+    public void applyBaseColor(KeyMapping binding) {
         if (!active || binding == null) {
             return;
         }
@@ -144,7 +139,7 @@ public final class LightHandler {
         LogiLED.LogiLedPulseLighting(rgb[0], rgb[1], rgb[2], LogiLED.LOGI_LED_DURATION_INFINITE, dutyCycleMs);
     }
 
-    public void setSolidColorOnKey(KeyBinding binding, int color) {
+    public void setSolidColorOnKey(KeyMapping binding, int color) {
         if (binding == null) {
             return;
         }
@@ -240,24 +235,80 @@ public final class LightHandler {
         restart(true);
     }
 
-    public int resolveScanCode(KeyBinding binding) {
+    public int resolveScanCode(KeyMapping binding) {
         if (binding == null) {
             return -1;
         }
-        InputUtil.Key key = InputUtil.fromTranslationKey(binding.getBoundKeyTranslationKey());
+        InputConstants.Key key = resolveActiveKey(binding);
         if (key == null) {
             return -1;
         }
-        InputUtil.Type type = key.getCategory();
-        if (type == InputUtil.Type.MOUSE) {
+        InputConstants.Type type = key.getType();
+        if (type == InputConstants.Type.MOUSE) {
             return -1;
         }
-        int code = key.getCode();
-        if (type == InputUtil.Type.KEYSYM) {
+        int code = key.getValue();
+        if (code <= 0) {
+            return -1;
+        }
+        if (type == InputConstants.Type.KEYSYM) {
             int scancode = GLFW.glfwGetKeyScancode(code);
             return scancode > 0 ? scancode : code;
         }
         return code;
+    }
+
+    // Mojang mappings hide the active key behind reflection; Yarn exposes helper methods.
+    private static InputConstants.Key resolveActiveKey(KeyMapping binding) {
+        if (!ACTIVE_KEY_METHOD_RESOLVED) {
+            ACTIVE_KEY_METHOD_RESOLVED = true;
+            ACTIVE_KEY_METHOD = findKeyMethod("getKey");
+            if (ACTIVE_KEY_METHOD == null) {
+                ACTIVE_KEY_METHOD = findKeyMethod("getBoundKey");
+            }
+        }
+
+        if (ACTIVE_KEY_METHOD != null) {
+            try {
+                Object result = ACTIVE_KEY_METHOD.invoke(binding);
+                if (result instanceof InputConstants.Key key) {
+                    return key;
+                }
+            } catch (ReflectiveOperationException ignored) {
+            }
+        }
+
+        if (!ACTIVE_KEY_FIELD_RESOLVED) {
+            ACTIVE_KEY_FIELD_RESOLVED = true;
+            try {
+                ACTIVE_KEY_FIELD = KeyMapping.class.getDeclaredField("key");
+                ACTIVE_KEY_FIELD.setAccessible(true);
+            } catch (ReflectiveOperationException ignored) {
+                ACTIVE_KEY_FIELD = null;
+            }
+        }
+
+        if (ACTIVE_KEY_FIELD != null) {
+            try {
+                Object value = ACTIVE_KEY_FIELD.get(binding);
+                if (value instanceof InputConstants.Key key) {
+                    return key;
+                }
+            } catch (IllegalAccessException ignored) {
+            }
+        }
+
+        return null;
+    }
+
+    private static Method findKeyMethod(String name) {
+        try {
+            Method method = KeyMapping.class.getMethod(name);
+            method.setAccessible(true);
+            return method;
+        } catch (NoSuchMethodException ignored) {
+            return null;
+        }
     }
 
     public Int2IntMap getCurrentColors() {
@@ -276,15 +327,32 @@ public final class LightHandler {
         };
     }
 
-    private static String resolveCategory(KeyBinding binding) {
+    private static String resolveCategory(KeyMapping binding) {
         if (binding == null) {
             return ConfigManager.CATEGORY_UNKNOWN;
         }
 
-        KeyBinding.Category category = binding.getCategory();
-        if (CATEGORY_TRANSLATION_FIELD != null) {
+        Object category = binding.getCategory();
+        if (category == null) {
+            return ConfigManager.CATEGORY_UNKNOWN;
+        }
+
+        if (CATEGORY_NAME_FIELD == null) {
             try {
-                Object value = CATEGORY_TRANSLATION_FIELD.get(category);
+                for (Field field : category.getClass().getDeclaredFields()) {
+                    if (field.getType() == String.class) {
+                        field.setAccessible(true);
+                        CATEGORY_NAME_FIELD = field;
+                        break;
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        if (CATEGORY_NAME_FIELD != null) {
+            try {
+                Object value = CATEGORY_NAME_FIELD.get(category);
                 if (value instanceof String str) {
                     return str;
                 }

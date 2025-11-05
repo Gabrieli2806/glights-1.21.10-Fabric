@@ -7,10 +7,10 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.ResourceType;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.PackType;
+import net.minecraft.server.packs.resources.ResourceManager;
 
 import java.nio.file.Path;
 import java.util.Optional;
@@ -23,7 +23,7 @@ public final class GLightsClient implements ClientModInitializer {
     @Override
     @SuppressWarnings("deprecation")
     public void onInitializeClient() {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         Path configPath = FabricLoader.getInstance().getConfigDir().resolve(GLights.MOD_ID + ".json");
 
         CONFIG = new ConfigManager(configPath);
@@ -41,25 +41,25 @@ public final class GLightsClient implements ClientModInitializer {
         EVENTS = new EventHandler(client, HANDLER, CONFIG);
         EVENTS.register();
 
-            ClientLifecycleEvents.CLIENT_STARTED.register(mc -> {
-                if (HANDLER != null && HANDLER.isActive()) {
-                    HANDLER.initBaseLighting();
-                }
-            });
+        ClientLifecycleEvents.CLIENT_STARTED.register(mc -> {
+            if (HANDLER != null && HANDLER.isActive()) {
+                HANDLER.initBaseLighting();
+            }
+        });
 
         SimpleSynchronousResourceReloadListener listener = new SimpleSynchronousResourceReloadListener() {
             @Override
-            public void reload(ResourceManager manager) {
+            public void onResourceManagerReload(ResourceManager manager) {
                 HANDLER.onResourceReload();
             }
 
             @Override
-            public Identifier getFabricId() {
-                return Identifier.of(GLights.MOD_ID, "light_handler");
+            public ResourceLocation getFabricId() {
+                return ResourceLocation.fromNamespaceAndPath(GLights.MOD_ID, "light_handler");
             }
         };
 
-        ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(listener);
+        ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(listener);
 
         GLights.LOGGER.info("GLights client services initialized");
     }

@@ -3,15 +3,14 @@
 	"id": "glights",
 	"version": "${version}",
 	"name": "GLights",
-	"description": "Fabric port of Logitech GLights providing per-key effects via the Logitech LED SDK.",
+	"description": "Logitech GLights providing effects via the Logitech LED SDK.",
 	"authors": [
-		"g2806",
-		"XFactHD"
+		"Gabrieli2806"
 	],
 	"contact": {
 		"sources": "https://github.com/g2806/glights"
 	},
-	"license": "GPL-3.0-or-later",
+	"license": "MIT",
 	"icon": "assets/glights/icon.png",
 	"environment": "client",
 	"entrypoints": {
@@ -26,7 +25,7 @@
 		"glights.mixins.json"
 	],
 	"depends": {
-		"fabricloader": ">=0.17.3",
+		"fabricloader": "*",
 		"minecraft": "~1.21.10",
 		"java": ">=21",
 		"fabric-api": "*"
