@@ -46,6 +46,12 @@ public final class ModMenuIntegration implements ModMenuApi {
         .setSaveConsumer(config::setPoisonEffectEnabled)
         .build());
     effects.addEntry(entryBuilder
+        .startBooleanToggle(Component.translatable("config.glights.effect.wither"), config.isWitherEffectEnabled())
+        .setDefaultValue(true)
+        .setTooltip(Component.translatable("config.glights.effect.wither.tooltip"))
+        .setSaveConsumer(config::setWitherEffectEnabled)
+        .build());
+    effects.addEntry(entryBuilder
         .startBooleanToggle(Component.translatable("config.glights.effect.frozen"), config.isFrozenEffectEnabled())
         .setDefaultValue(true)
         .setTooltip(Component.translatable("config.glights.effect.frozen.tooltip"))

@@ -63,6 +63,7 @@ public final class ConfigManager {
         boolean poisonEffect = true;
         boolean frozenEffect = true;
         boolean netherPortalEffect = true;
+        boolean witherEffect = true;
         boolean backgroundFillEnabled = false;
         boolean mouseLightingEnabled = true;
         boolean highlightSelectedSlot = true;
@@ -73,6 +74,7 @@ public final class ConfigManager {
             poisonEffect = true;
             frozenEffect = true;
             netherPortalEffect = true;
+            witherEffect = true;
             backgroundFillEnabled = false;
             mouseLightingEnabled = true;
             highlightSelectedSlot = true;
@@ -180,6 +182,7 @@ public final class ConfigManager {
         settingsObject.addProperty("poisonEffect", settings.poisonEffect);
         settingsObject.addProperty("frozenEffect", settings.frozenEffect);
         settingsObject.addProperty("netherPortalEffect", settings.netherPortalEffect);
+    settingsObject.addProperty("witherEffect", settings.witherEffect);
         settingsObject.addProperty("backgroundFillEnabled", settings.backgroundFillEnabled);
     settingsObject.addProperty("mouseLightingEnabled", settings.mouseLightingEnabled);
         settingsObject.addProperty("highlightSelectedSlot", settings.highlightSelectedSlot);
@@ -265,6 +268,7 @@ public final class ConfigManager {
         settings.poisonEffect = getBoolean(settingsObject, "poisonEffect", settings.poisonEffect);
         settings.frozenEffect = getBoolean(settingsObject, "frozenEffect", settings.frozenEffect);
         settings.netherPortalEffect = getBoolean(settingsObject, "netherPortalEffect", settings.netherPortalEffect);
+        settings.witherEffect = getBoolean(settingsObject, "witherEffect", settings.witherEffect);
         settings.backgroundFillEnabled = getBoolean(settingsObject, "backgroundFillEnabled", settings.backgroundFillEnabled);
         settings.mouseLightingEnabled = getBoolean(settingsObject, "mouseLightingEnabled", settings.mouseLightingEnabled);
         settings.highlightSelectedSlot = getBoolean(settingsObject, "highlightSelectedSlot", settings.highlightSelectedSlot);
@@ -336,6 +340,17 @@ public final class ConfigManager {
     public void setNetherPortalEffectEnabled(boolean enabled) {
         if (settings.netherPortalEffect != enabled) {
             settings.netherPortalEffect = enabled;
+            dirty = true;
+        }
+    }
+
+    public boolean isWitherEffectEnabled() {
+        return settings.witherEffect;
+    }
+
+    public void setWitherEffectEnabled(boolean enabled) {
+        if (settings.witherEffect != enabled) {
+            settings.witherEffect = enabled;
             dirty = true;
         }
     }

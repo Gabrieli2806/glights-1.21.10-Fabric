@@ -25,8 +25,9 @@ public final class EventHandler {
         DAMAGE_FLASH,
         UNDERWATER,
         POISON,
-    FROZEN,
-    NETHER_PORTAL
+        WITHER,
+        FROZEN,
+        NETHER_PORTAL
     }
 
     private final Minecraft client;
@@ -220,16 +221,17 @@ public final class EventHandler {
 
     private void updateSpecialEffects(LocalPlayer player) {
         boolean poisonActive = config.isPoisonEffectEnabled() && player.hasEffect(MobEffects.POISON);
+        boolean witherActive = config.isWitherEffectEnabled() && player.hasEffect(MobEffects.WITHER);
 
-        if (config.isDamageEffectEnabled() && !poisonActive && player.hurtTime > 0) {
+        if (config.isDamageEffectEnabled() && !poisonActive && !witherActive && player.hurtTime > 0) {
             damageFlashTicks = 12;
-        } else if (!config.isDamageEffectEnabled() || poisonActive) {
+        } else if (!config.isDamageEffectEnabled() || poisonActive || witherActive) {
             damageFlashTicks = 0;
         } else if (damageFlashTicks > 0) {
             damageFlashTicks--;
         }
 
-        SpecialEffect desired = determineDesiredEffect(player, poisonActive);
+        SpecialEffect desired = determineDesiredEffect(player, poisonActive, witherActive);
         if (desired != activeEffect) {
             applySpecialEffect(desired, true);
         }
@@ -238,12 +240,15 @@ public final class EventHandler {
         }
     }
 
-    private SpecialEffect determineDesiredEffect(LocalPlayer player, boolean poisonActive) {
+    private SpecialEffect determineDesiredEffect(LocalPlayer player, boolean poisonActive, boolean witherActive) {
         if (config.isDamageEffectEnabled() && damageFlashTicks > 0) {
             return SpecialEffect.DAMAGE_FLASH;
         }
         if (config.isNetherPortalEffectEnabled() && isWaitingForNether(player)) {
             return SpecialEffect.NETHER_PORTAL;
+        }
+        if (witherActive) {
+            return SpecialEffect.WITHER;
         }
         if (poisonActive) {
             return SpecialEffect.POISON;
@@ -276,6 +281,7 @@ public final class EventHandler {
             }
         } else {
             captureEffectScanCodes();
+            tickActiveEffect();
         }
     }
 
@@ -294,6 +300,7 @@ public final class EventHandler {
             case DAMAGE_FLASH -> runDamageRipple(scanCodes);
             case UNDERWATER -> runUnderwaterWave(scanCodes);
             case POISON -> runPoisonStarlight(scanCodes);
+            case WITHER -> runWitherEcho(scanCodes);
             case FROZEN -> runFrozenBreathing();
             case NETHER_PORTAL -> runNetherColorWave(scanCodes);
             default -> {
@@ -366,6 +373,32 @@ public final class EventHandler {
             float sparkle = effectRandom.nextFloat();
             int color = blendColors(0x047A1F, 0x7CFF8A, sparkle);
             handler.setSolidColorOnScanCode(scanCodes[index], color);
+        }
+    }
+
+    private void runWitherEcho(int[] scanCodes) {
+        float swell = 0.5f + 0.5f * (float) Math.sin(effectTicks * 0.045f + 0.6f);
+        int base = blendColors(0x050007, 0x160022, swell);
+        handler.setSolidColor(base);
+        if (scanCodes.length == 0) {
+            return;
+        }
+        int echoCount = Math.max(4, scanCodes.length / 16);
+        for (int i = 0; i < echoCount; i++) {
+            int index = (effectTicks / 4 + i * 19) % scanCodes.length;
+            float age = ((effectTicks + i * 13) % 48) / 48.0f;
+            float pulse = clamp01(1.0f - age);
+            pulse *= pulse;
+            int color = blendColors(0x26003A, 0xB400FF, pulse);
+            handler.setSolidColorOnScanCode(scanCodes[index], color);
+        }
+        if (effectTicks % 12 == 0) {
+            int flickers = Math.min(3, scanCodes.length);
+            int accent = blendColors(0x30004A, 0xE000FF, 0.85f);
+            for (int i = 0; i < flickers; i++) {
+                int index = effectRandom.nextInt(scanCodes.length);
+                handler.setSolidColorOnScanCode(scanCodes[index], accent);
+            }
         }
     }
 

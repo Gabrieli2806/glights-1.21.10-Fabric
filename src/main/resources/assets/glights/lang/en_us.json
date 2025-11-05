@@ -7,6 +7,8 @@
   "config.glights.effect.underwater.tooltip": "Pulse the keyboard blue while you are underwater.",
   "config.glights.effect.poison": "Poison pulse",
   "config.glights.effect.poison.tooltip": "Pulse the keyboard green while you are poisoned.",
+  "config.glights.effect.wither": "Wither surge",
+  "config.glights.effect.wither.tooltip": "Envelope the keyboard in a dark pulse while you suffer the Wither effect.",
   "config.glights.effect.frozen": "Frozen pulse",
   "config.glights.effect.frozen.tooltip": "Pulse the keyboard light blue while you are freezing.",
   "config.glights.effect.nether_portal": "Nether portal pulse",
