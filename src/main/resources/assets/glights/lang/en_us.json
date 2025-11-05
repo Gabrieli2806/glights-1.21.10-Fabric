@@ -18,5 +18,9 @@
   "config.glights.hotbar.highlight_color": "Highlight color",
   "config.glights.hotbar.highlight_color.tooltip": "Pick the color used for the selected hotbar key.",
   "config.glights.keys.wasd_color": "WASD color",
-  "config.glights.keys.wasd_color.tooltip": "Set the color for the movement keys (W/A/S/D)."
+  "config.glights.keys.wasd_color.tooltip": "Set the color for the movement keys (W/A/S/D).",
+  "config.glights.keys.background_fill_enabled": "Enable background fill",
+  "config.glights.keys.background_fill_enabled.tooltip": "Fill all other keys with a solid color when enabled.",
+  "config.glights.keys.background_fill_color": "Background fill color",
+  "config.glights.keys.background_fill_color.tooltip": "Pick the color used for non-highlighted keys."
 }

@@ -26,31 +26,31 @@ public final class ModMenuIntegration implements ModMenuApi {
 
         ConfigEntryBuilder entryBuilder = builder.entryBuilder();
 
-        ConfigCategory effects = builder.getOrCreateCategory(Component.translatable("config.glights.category.effects"));
-        effects.addEntry(entryBuilder
-                .startBooleanToggle(Component.translatable("config.glights.effect.damage"), config.isDamageEffectEnabled())
-                .setDefaultValue(true)
-                .setTooltip(Component.translatable("config.glights.effect.damage.tooltip"))
-                .setSaveConsumer(config::setDamageEffectEnabled)
-                .build());
-        effects.addEntry(entryBuilder
-                .startBooleanToggle(Component.translatable("config.glights.effect.underwater"), config.isUnderwaterEffectEnabled())
-                .setDefaultValue(true)
-                .setTooltip(Component.translatable("config.glights.effect.underwater.tooltip"))
-                .setSaveConsumer(config::setUnderwaterEffectEnabled)
-                .build());
-        effects.addEntry(entryBuilder
-                .startBooleanToggle(Component.translatable("config.glights.effect.poison"), config.isPoisonEffectEnabled())
-                .setDefaultValue(true)
-                .setTooltip(Component.translatable("config.glights.effect.poison.tooltip"))
-                .setSaveConsumer(config::setPoisonEffectEnabled)
-                .build());
-        effects.addEntry(entryBuilder
-                .startBooleanToggle(Component.translatable("config.glights.effect.frozen"), config.isFrozenEffectEnabled())
-                .setDefaultValue(true)
-                .setTooltip(Component.translatable("config.glights.effect.frozen.tooltip"))
-                .setSaveConsumer(config::setFrozenEffectEnabled)
-                .build());
+    ConfigCategory effects = builder.getOrCreateCategory(Component.translatable("config.glights.category.effects"));
+    effects.addEntry(entryBuilder
+        .startBooleanToggle(Component.translatable("config.glights.effect.damage"), config.isDamageEffectEnabled())
+        .setDefaultValue(true)
+        .setTooltip(Component.translatable("config.glights.effect.damage.tooltip"))
+        .setSaveConsumer(config::setDamageEffectEnabled)
+        .build());
+    effects.addEntry(entryBuilder
+        .startBooleanToggle(Component.translatable("config.glights.effect.underwater"), config.isUnderwaterEffectEnabled())
+        .setDefaultValue(true)
+        .setTooltip(Component.translatable("config.glights.effect.underwater.tooltip"))
+        .setSaveConsumer(config::setUnderwaterEffectEnabled)
+        .build());
+    effects.addEntry(entryBuilder
+        .startBooleanToggle(Component.translatable("config.glights.effect.poison"), config.isPoisonEffectEnabled())
+        .setDefaultValue(true)
+        .setTooltip(Component.translatable("config.glights.effect.poison.tooltip"))
+        .setSaveConsumer(config::setPoisonEffectEnabled)
+        .build());
+    effects.addEntry(entryBuilder
+        .startBooleanToggle(Component.translatable("config.glights.effect.frozen"), config.isFrozenEffectEnabled())
+        .setDefaultValue(true)
+        .setTooltip(Component.translatable("config.glights.effect.frozen.tooltip"))
+        .setSaveConsumer(config::setFrozenEffectEnabled)
+        .build());
     effects.addEntry(entryBuilder
         .startBooleanToggle(Component.translatable("config.glights.effect.nether_portal"), config.isNetherPortalEffectEnabled())
         .setDefaultValue(true)
@@ -58,13 +58,13 @@ public final class ModMenuIntegration implements ModMenuApi {
         .setSaveConsumer(config::setNetherPortalEffectEnabled)
         .build());
 
-        ConfigCategory hotbar = builder.getOrCreateCategory(Component.translatable("config.glights.category.hotbar"));
-        hotbar.addEntry(entryBuilder
-                .startBooleanToggle(Component.translatable("config.glights.hotbar.highlight_selected"), config.isHighlightSelectedSlot())
-                .setDefaultValue(true)
-                .setTooltip(Component.translatable("config.glights.hotbar.highlight_selected.tooltip"))
-                .setSaveConsumer(config::setHighlightSelectedSlot)
-                .build());
+    ConfigCategory hotbar = builder.getOrCreateCategory(Component.translatable("config.glights.category.hotbar"));
+    hotbar.addEntry(entryBuilder
+        .startBooleanToggle(Component.translatable("config.glights.hotbar.highlight_selected"), config.isHighlightSelectedSlot())
+        .setDefaultValue(true)
+        .setTooltip(Component.translatable("config.glights.hotbar.highlight_selected.tooltip"))
+        .setSaveConsumer(config::setHighlightSelectedSlot)
+        .build());
     hotbar.addEntry(entryBuilder
         .startColorField(Component.translatable("config.glights.hotbar.highlight_color"), config.getHighlightColor())
         .setDefaultValue(config.getDefaultHighlightColor())
@@ -73,6 +73,18 @@ public final class ModMenuIntegration implements ModMenuApi {
         .build());
 
     ConfigCategory keyColors = builder.getOrCreateCategory(Component.translatable("config.glights.category.keys"));
+    keyColors.addEntry(entryBuilder
+        .startBooleanToggle(Component.translatable("config.glights.keys.background_fill_enabled"), config.isBackgroundFillEnabled())
+        .setDefaultValue(false)
+        .setTooltip(Component.translatable("config.glights.keys.background_fill_enabled.tooltip"))
+        .setSaveConsumer(config::setBackgroundFillEnabled)
+        .build());
+    keyColors.addEntry(entryBuilder
+        .startColorField(Component.translatable("config.glights.keys.background_fill_color"), config.getBackgroundFillColor())
+        .setDefaultValue(config.getDefaultBackgroundFillColor())
+        .setTooltip(Component.translatable("config.glights.keys.background_fill_color.tooltip"))
+        .setSaveConsumer(color -> config.setBackgroundFillColor(color & 0xFFFFFF))
+        .build());
     keyColors.addEntry(entryBuilder
         .startColorField(Component.translatable("config.glights.keys.wasd_color"), config.getWasdColor())
         .setDefaultValue(config.getDefaultWasdColor())

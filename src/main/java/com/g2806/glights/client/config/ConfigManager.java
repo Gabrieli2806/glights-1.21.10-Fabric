@@ -26,12 +26,14 @@ public final class ConfigManager {
     public static final String CATEGORY_INVENTORY = "key.categories.inventory";
     public static final String CATEGORY_INVENTORY_SELECTED = "key.categories.inventory.selected";
     public static final String CATEGORY_WASD = "key.glights.special.wasd";
+    public static final String CATEGORY_BACKGROUND = "key.glights.special.background";
 
     private static final int DEFAULT_UNKNOWN_COLOR = 0xFF0000;
     private static final int DEFAULT_DEAD_COLOR = 0xFF0000;
     private static final int DEFAULT_INVENTORY_COLOR = 0x00FF00;
     private static final int DEFAULT_HIGHLIGHT_COLOR = 0xFF7F00;
     private static final int DEFAULT_WASD_COLOR = 0xFF8C00;
+    private static final int DEFAULT_BACKGROUND_COLOR = 0x1A1A1A;
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Type TYPE = new TypeToken<Map<String, String>>() { }.getType();
@@ -41,6 +43,7 @@ public final class ConfigManager {
             .put(CATEGORY_INVENTORY, DEFAULT_INVENTORY_COLOR)
             .put(CATEGORY_INVENTORY_SELECTED, DEFAULT_HIGHLIGHT_COLOR)
             .put(CATEGORY_WASD, DEFAULT_WASD_COLOR)
+            .put(CATEGORY_BACKGROUND, DEFAULT_BACKGROUND_COLOR)
             .put("key.categories.movement", 0x00DCFF)
             .put("key.categories.gameplay", 0xFFFFFF)
             .put("key.categories.creative", 0x8000FF)
@@ -60,6 +63,7 @@ public final class ConfigManager {
         boolean poisonEffect = true;
         boolean frozenEffect = true;
         boolean netherPortalEffect = true;
+        boolean backgroundFillEnabled = false;
         boolean highlightSelectedSlot = true;
 
         void reset() {
@@ -68,6 +72,7 @@ public final class ConfigManager {
             poisonEffect = true;
             frozenEffect = true;
             netherPortalEffect = true;
+            backgroundFillEnabled = false;
             highlightSelectedSlot = true;
         }
     }
@@ -172,7 +177,8 @@ public final class ConfigManager {
         settingsObject.addProperty("underwaterEffect", settings.underwaterEffect);
         settingsObject.addProperty("poisonEffect", settings.poisonEffect);
         settingsObject.addProperty("frozenEffect", settings.frozenEffect);
-    settingsObject.addProperty("netherPortalEffect", settings.netherPortalEffect);
+        settingsObject.addProperty("netherPortalEffect", settings.netherPortalEffect);
+        settingsObject.addProperty("backgroundFillEnabled", settings.backgroundFillEnabled);
         settingsObject.addProperty("highlightSelectedSlot", settings.highlightSelectedSlot);
         root.add("settings", settingsObject);
 
@@ -198,8 +204,8 @@ public final class ConfigManager {
         if (preset != null) {
             return preset;
         }
-    dirty = true;
-    return DEFAULT_INVENTORY_COLOR;
+        dirty = true;
+        return DEFAULT_INVENTORY_COLOR;
     }
 
     private static int parseColor(String raw) {
@@ -256,6 +262,7 @@ public final class ConfigManager {
         settings.poisonEffect = getBoolean(settingsObject, "poisonEffect", settings.poisonEffect);
         settings.frozenEffect = getBoolean(settingsObject, "frozenEffect", settings.frozenEffect);
         settings.netherPortalEffect = getBoolean(settingsObject, "netherPortalEffect", settings.netherPortalEffect);
+        settings.backgroundFillEnabled = getBoolean(settingsObject, "backgroundFillEnabled", settings.backgroundFillEnabled);
         settings.highlightSelectedSlot = getBoolean(settingsObject, "highlightSelectedSlot", settings.highlightSelectedSlot);
     }
 
@@ -362,5 +369,28 @@ public final class ConfigManager {
 
     public int getDefaultWasdColor() {
         return DEFAULT_WASD_COLOR;
+    }
+
+    public boolean isBackgroundFillEnabled() {
+        return settings.backgroundFillEnabled;
+    }
+
+    public void setBackgroundFillEnabled(boolean enabled) {
+        if (settings.backgroundFillEnabled != enabled) {
+            settings.backgroundFillEnabled = enabled;
+            dirty = true;
+        }
+    }
+
+    public int getBackgroundFillColor() {
+        return getColorForCategory(CATEGORY_BACKGROUND);
+    }
+
+    public void setBackgroundFillColor(int color) {
+        setColorForCategory(CATEGORY_BACKGROUND, color);
+    }
+
+    public int getDefaultBackgroundFillColor() {
+        return DEFAULT_BACKGROUND_COLOR;
     }
 }

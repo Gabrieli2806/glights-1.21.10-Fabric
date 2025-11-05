@@ -109,9 +109,11 @@ public final class LightHandler {
         categories.add(ConfigManager.CATEGORY_INVENTORY);
         categories.add(ConfigManager.CATEGORY_INVENTORY_SELECTED);
         categories.add(ConfigManager.CATEGORY_WASD);
+        categories.add(ConfigManager.CATEGORY_BACKGROUND);
         config.ensureDefaults(categories);
         config.saveIfDirty();
 
+        applyBackgroundFill();
         keyLastColor.clear();
         for (KeyMapping binding : allKeys) {
             applyBaseColor(binding);
@@ -363,6 +365,14 @@ public final class LightHandler {
         setSolidColorOnKey(client.options.keyLeft, color);
         setSolidColorOnKey(client.options.keyDown, color);
         setSolidColorOnKey(client.options.keyRight, color);
+    }
+
+    private void applyBackgroundFill() {
+        if (!active) {
+            return;
+        }
+        int color = config.isBackgroundFillEnabled() ? config.getBackgroundFillColor() : 0x000000;
+        setSolidColor(color);
     }
 
     // Mojang mappings hide the active key behind reflection; Yarn exposes helper methods.
