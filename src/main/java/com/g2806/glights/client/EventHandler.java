@@ -141,7 +141,7 @@ public final class EventHandler {
             lastSelectedSlot = slot;
             int code = hotbarScanCodes[slot];
             if (code > 0) {
-                handler.setSolidColorOnScanCode(code, config.getColorForCategory(ConfigManager.CATEGORY_INVENTORY_SELECTED));
+                handler.setSolidColorOnScanCode(code, config.getHighlightColor());
             }
         }
     }
@@ -181,25 +181,27 @@ public final class EventHandler {
     }
 
     private void updateSpecialEffects(LocalPlayer player) {
-        if (config.isDamageEffectEnabled() && player.hurtTime > 0) {
+        boolean poisonActive = config.isPoisonEffectEnabled() && player.hasEffect(MobEffects.POISON);
+
+        if (config.isDamageEffectEnabled() && !poisonActive && player.hurtTime > 0) {
             damageFlashTicks = 12;
-        } else if (damageFlashTicks > 0 && config.isDamageEffectEnabled()) {
-            damageFlashTicks--;
-        } else if (!config.isDamageEffectEnabled()) {
+        } else if (!config.isDamageEffectEnabled() || poisonActive) {
             damageFlashTicks = 0;
+        } else if (damageFlashTicks > 0) {
+            damageFlashTicks--;
         }
 
-        SpecialEffect desired = determineDesiredEffect(player);
+        SpecialEffect desired = determineDesiredEffect(player, poisonActive);
         if (desired != activeEffect) {
             applySpecialEffect(desired, true);
         }
     }
 
-    private SpecialEffect determineDesiredEffect(LocalPlayer player) {
+    private SpecialEffect determineDesiredEffect(LocalPlayer player, boolean poisonActive) {
         if (config.isDamageEffectEnabled() && damageFlashTicks > 0) {
             return SpecialEffect.DAMAGE_FLASH;
         }
-        if (config.isPoisonEffectEnabled() && player.hasEffect(MobEffects.POISON)) {
+        if (poisonActive) {
             return SpecialEffect.POISON;
         }
         if (config.isFrozenEffectEnabled() && player.getTicksFrozen() > 0) {
@@ -263,7 +265,7 @@ public final class EventHandler {
         }
         int code = hotbarScanCodes[lastSelectedSlot];
         if (code > 0) {
-            handler.setSolidColorOnScanCode(code, config.getColorForCategory(ConfigManager.CATEGORY_INVENTORY_SELECTED));
+            handler.setSolidColorOnScanCode(code, config.getHighlightColor());
         }
     }
 

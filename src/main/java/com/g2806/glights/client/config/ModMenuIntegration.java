@@ -59,6 +59,12 @@ public final class ModMenuIntegration implements ModMenuApi {
                 .setTooltip(Component.translatable("config.glights.hotbar.highlight_selected.tooltip"))
                 .setSaveConsumer(config::setHighlightSelectedSlot)
                 .build());
+    hotbar.addEntry(entryBuilder
+        .startColorField(Component.translatable("config.glights.hotbar.highlight_color"), config.getHighlightColor())
+        .setDefaultValue(config.getDefaultHighlightColor())
+        .setTooltip(Component.translatable("config.glights.hotbar.highlight_color.tooltip"))
+        .setSaveConsumer(color -> config.setHighlightColor(color & 0xFFFFFF))
+        .build());
 
         builder.setSavingRunnable(() -> {
             config.saveIfDirty();

@@ -11,5 +11,7 @@
   "config.glights.effect.frozen.tooltip": "Pulse the keyboard light blue while you are freezing.",
   "config.glights.category.hotbar": "Hotbar",
   "config.glights.hotbar.highlight_selected": "Highlight selected slot",
-  "config.glights.hotbar.highlight_selected.tooltip": "Show the currently selected hotbar slot with the accent color."
+  "config.glights.hotbar.highlight_selected.tooltip": "Show the currently selected hotbar slot with the accent color.",
+  "config.glights.hotbar.highlight_color": "Highlight color",
+  "config.glights.hotbar.highlight_color.tooltip": "Pick the color used for the selected hotbar key."
 }

@@ -26,13 +26,18 @@ public final class ConfigManager {
     public static final String CATEGORY_INVENTORY = "key.categories.inventory";
     public static final String CATEGORY_INVENTORY_SELECTED = "key.categories.inventory.selected";
 
+    private static final int DEFAULT_UNKNOWN_COLOR = 0xFF0000;
+    private static final int DEFAULT_DEAD_COLOR = 0xFF0000;
+    private static final int DEFAULT_INVENTORY_COLOR = 0x00FF00;
+    private static final int DEFAULT_HIGHLIGHT_COLOR = 0xFF7F00;
+
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Type TYPE = new TypeToken<Map<String, String>>() { }.getType();
     private static final Map<String, Integer> DEFAULT_COLORS = ImmutableMap.<String, Integer>builder()
-            .put(CATEGORY_UNKNOWN, 0xFF0000)
-            .put(CATEGORY_DEAD, 0xFF0000)
-            .put(CATEGORY_INVENTORY, 0x00FF00)
-            .put(CATEGORY_INVENTORY_SELECTED, 0xFF7F00)
+            .put(CATEGORY_UNKNOWN, DEFAULT_UNKNOWN_COLOR)
+            .put(CATEGORY_DEAD, DEFAULT_DEAD_COLOR)
+            .put(CATEGORY_INVENTORY, DEFAULT_INVENTORY_COLOR)
+            .put(CATEGORY_INVENTORY_SELECTED, DEFAULT_HIGHLIGHT_COLOR)
             .put("key.categories.movement", 0x00DCFF)
             .put("key.categories.gameplay", 0xFFFFFF)
             .put("key.categories.creative", 0x8000FF)
@@ -187,8 +192,8 @@ public final class ConfigManager {
         if (preset != null) {
             return preset;
         }
-        dirty = true;
-        return 0x00FF00;
+    dirty = true;
+    return DEFAULT_INVENTORY_COLOR;
     }
 
     private static int parseColor(String raw) {
@@ -315,5 +320,17 @@ public final class ConfigManager {
             settings.highlightSelectedSlot = enabled;
             dirty = true;
         }
+    }
+
+    public int getHighlightColor() {
+        return getColorForCategory(CATEGORY_INVENTORY_SELECTED);
+    }
+
+    public void setHighlightColor(int color) {
+        setColorForCategory(CATEGORY_INVENTORY_SELECTED, color);
+    }
+
+    public int getDefaultHighlightColor() {
+        return DEFAULT_HIGHLIGHT_COLOR;
     }
 }
