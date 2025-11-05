@@ -1,0 +1,17 @@
+{
+  "config.glights.title": "GLights Settings",
+  "config.glights.category.effects": "Lighting Effects",
+  "config.glights.effect.damage": "Damage flash",
+  "config.glights.effect.damage.tooltip": "Blink the keyboard red when you take damage.",
+  "config.glights.effect.underwater": "Underwater pulse",
+  "config.glights.effect.underwater.tooltip": "Pulse the keyboard blue while you are underwater.",
+  "config.glights.effect.poison": "Poison pulse",
+  "config.glights.effect.poison.tooltip": "Pulse the keyboard green while you are poisoned.",
+  "config.glights.effect.frozen": "Frozen pulse",
+  "config.glights.effect.frozen.tooltip": "Pulse the keyboard light blue while you are freezing.",
+  "config.glights.category.hotbar": "Hotbar",
+  "config.glights.hotbar.always_visible": "Always light slots 1-9",
+  "config.glights.hotbar.always_visible.tooltip": "Keep the number row keys illuminated using the inventory color.",
+  "config.glights.hotbar.highlight_selected": "Highlight selected slot",
+  "config.glights.hotbar.highlight_selected.tooltip": "Show the currently selected hotbar slot with the accent color."
+}

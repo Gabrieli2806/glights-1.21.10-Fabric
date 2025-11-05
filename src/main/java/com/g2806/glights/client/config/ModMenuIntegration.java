@@ -1,0 +1,78 @@
+package com.g2806.glights.client.config;
+
+import com.g2806.glights.client.GLightsClient;
+import com.terraformersmc.modmenu.api.ConfigScreenFactory;
+import com.terraformersmc.modmenu.api.ModMenuApi;
+import me.shedaniel.clothconfig2.api.ConfigBuilder;
+import me.shedaniel.clothconfig2.api.ConfigCategory;
+import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+
+public final class ModMenuIntegration implements ModMenuApi {
+    @Override
+    public ConfigScreenFactory<?> getModConfigScreenFactory() {
+        return parent -> buildScreen(parent, GLightsClient.CONFIG);
+    }
+
+    private Screen buildScreen(Screen parent, ConfigManager config) {
+        if (config == null) {
+            return parent;
+        }
+
+        ConfigBuilder builder = ConfigBuilder.create()
+                .setParentScreen(parent)
+                .setTitle(Component.translatable("config.glights.title"));
+
+        ConfigEntryBuilder entryBuilder = builder.entryBuilder();
+
+        ConfigCategory effects = builder.getOrCreateCategory(Component.translatable("config.glights.category.effects"));
+        effects.addEntry(entryBuilder
+                .startBooleanToggle(Component.translatable("config.glights.effect.damage"), config.isDamageEffectEnabled())
+                .setDefaultValue(true)
+                .setTooltip(Component.translatable("config.glights.effect.damage.tooltip"))
+                .setSaveConsumer(config::setDamageEffectEnabled)
+                .build());
+        effects.addEntry(entryBuilder
+                .startBooleanToggle(Component.translatable("config.glights.effect.underwater"), config.isUnderwaterEffectEnabled())
+                .setDefaultValue(true)
+                .setTooltip(Component.translatable("config.glights.effect.underwater.tooltip"))
+                .setSaveConsumer(config::setUnderwaterEffectEnabled)
+                .build());
+        effects.addEntry(entryBuilder
+                .startBooleanToggle(Component.translatable("config.glights.effect.poison"), config.isPoisonEffectEnabled())
+                .setDefaultValue(true)
+                .setTooltip(Component.translatable("config.glights.effect.poison.tooltip"))
+                .setSaveConsumer(config::setPoisonEffectEnabled)
+                .build());
+        effects.addEntry(entryBuilder
+                .startBooleanToggle(Component.translatable("config.glights.effect.frozen"), config.isFrozenEffectEnabled())
+                .setDefaultValue(true)
+                .setTooltip(Component.translatable("config.glights.effect.frozen.tooltip"))
+                .setSaveConsumer(config::setFrozenEffectEnabled)
+                .build());
+
+        ConfigCategory hotbar = builder.getOrCreateCategory(Component.translatable("config.glights.category.hotbar"));
+        hotbar.addEntry(entryBuilder
+                .startBooleanToggle(Component.translatable("config.glights.hotbar.always_visible"), config.isHotbarAlwaysVisible())
+                .setDefaultValue(true)
+                .setTooltip(Component.translatable("config.glights.hotbar.always_visible.tooltip"))
+                .setSaveConsumer(config::setHotbarAlwaysVisible)
+                .build());
+        hotbar.addEntry(entryBuilder
+                .startBooleanToggle(Component.translatable("config.glights.hotbar.highlight_selected"), config.isHighlightSelectedSlot())
+                .setDefaultValue(true)
+                .setTooltip(Component.translatable("config.glights.hotbar.highlight_selected.tooltip"))
+                .setSaveConsumer(config::setHighlightSelectedSlot)
+                .build());
+
+        builder.setSavingRunnable(() -> {
+            config.saveIfDirty();
+            if (GLightsClient.EVENTS != null) {
+                GLightsClient.EVENTS.onConfigChanged();
+            }
+        });
+
+        return builder.build();
+    }
+}

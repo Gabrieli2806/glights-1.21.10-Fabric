@@ -4,6 +4,9 @@ import com.g2806.glights.GLights;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 
 import java.io.IOException;
@@ -40,7 +43,26 @@ public final class ConfigManager {
 
     private final Path path;
     private final Map<String, Integer> colors = new HashMap<>();
+    private final Settings settings = new Settings();
     private boolean dirty;
+
+    private static final class Settings {
+        boolean damageEffect = true;
+        boolean underwaterEffect = true;
+        boolean poisonEffect = true;
+        boolean frozenEffect = true;
+        boolean hotbarAlwaysVisible = true;
+        boolean highlightSelectedSlot = true;
+
+        void reset() {
+            damageEffect = true;
+            underwaterEffect = true;
+            poisonEffect = true;
+            frozenEffect = true;
+            hotbarAlwaysVisible = true;
+            highlightSelectedSlot = true;
+        }
+    }
 
     public ConfigManager(Path path) {
         this.path = path;
@@ -49,6 +71,7 @@ public final class ConfigManager {
     public void load() {
         colors.clear();
         colors.putAll(DEFAULT_COLORS);
+        settings.reset();
         dirty = false;
 
         if (!Files.exists(path)) {
@@ -57,25 +80,39 @@ public final class ConfigManager {
         }
 
         try (Reader reader = Files.newBufferedReader(path)) {
-            Map<String, String> raw = GSON.fromJson(reader, TYPE);
-            if (raw == null) {
+            JsonElement element = JsonParser.parseReader(reader);
+            if (element == null || element.isJsonNull()) {
                 dirty = true;
                 return;
             }
 
-            for (Map.Entry<String, String> entry : raw.entrySet()) {
-                String category = entry.getKey();
-                String value = entry.getValue();
-                if (category == null || value == null) {
-                    continue;
+            if (element.isJsonObject()) {
+                JsonObject object = element.getAsJsonObject();
+                boolean migratedFormat = false;
+                if (object.has("colors") && object.get("colors").isJsonObject()) {
+                    migratedFormat = true;
+                    readColors(object.getAsJsonObject("colors"));
+                } else {
+                    // Legacy flat map format
+                    readLegacyColors(object);
                 }
-                try {
-                    int color = parseColor(value.trim());
-                    colors.put(category, color & 0xFFFFFF);
-                } catch (NumberFormatException e) {
-                    GLights.LOGGER.warn("Ignoring malformed color '{}' for category '{}'", value, category);
+
+                if (object.has("settings") && object.get("settings").isJsonObject()) {
+                    migratedFormat = true;
+                    readSettings(object.getAsJsonObject("settings"));
+                }
+
+                if (!migratedFormat) {
+                    // Pure legacy format, ensure we rewrite using the new structure.
                     dirty = true;
                 }
+            } else {
+                // Unexpected type, treat as legacy map
+                Map<String, String> raw = GSON.fromJson(element, TYPE);
+                if (raw != null) {
+                    readLegacyColors(raw);
+                }
+                dirty = true;
             }
         } catch (IOException e) {
             GLights.LOGGER.error("Failed to read GLights config from {}", path, e);
@@ -115,13 +152,24 @@ public final class ConfigManager {
             return;
         }
 
-        Map<String, String> serialized = new HashMap<>();
+        JsonObject root = new JsonObject();
+        JsonObject colorObject = new JsonObject();
         for (Map.Entry<String, Integer> entry : colors.entrySet()) {
-            serialized.put(entry.getKey(), String.format(Locale.ROOT, "0x%06X", entry.getValue()));
+            colorObject.addProperty(entry.getKey(), String.format(Locale.ROOT, "0x%06X", entry.getValue()));
         }
+        root.add("colors", colorObject);
+
+        JsonObject settingsObject = new JsonObject();
+        settingsObject.addProperty("damageEffect", settings.damageEffect);
+        settingsObject.addProperty("underwaterEffect", settings.underwaterEffect);
+        settingsObject.addProperty("poisonEffect", settings.poisonEffect);
+        settingsObject.addProperty("frozenEffect", settings.frozenEffect);
+        settingsObject.addProperty("hotbarAlwaysVisible", settings.hotbarAlwaysVisible);
+        settingsObject.addProperty("highlightSelectedSlot", settings.highlightSelectedSlot);
+        root.add("settings", settingsObject);
 
         try (Writer writer = Files.newBufferedWriter(path)) {
-            GSON.toJson(serialized, TYPE, writer);
+            GSON.toJson(root, writer);
             dirty = false;
         } catch (IOException e) {
             GLights.LOGGER.error("Failed to write GLights config to {}", path, e);
@@ -151,5 +199,136 @@ public final class ConfigManager {
             return Integer.decode("0x" + raw.substring(1));
         }
         return Integer.decode(raw);
+    }
+
+    private void readColors(JsonObject colorsObject) {
+        for (Map.Entry<String, JsonElement> entry : colorsObject.entrySet()) {
+            String category = entry.getKey();
+            JsonElement valueElement = entry.getValue();
+            if (category == null || valueElement == null || !valueElement.isJsonPrimitive()) {
+                continue;
+            }
+            try {
+                int color = parseColor(valueElement.getAsString().trim());
+                colors.put(category, color & 0xFFFFFF);
+            } catch (NumberFormatException exception) {
+                GLights.LOGGER.warn("Ignoring malformed color '{}' for category '{}'", valueElement, category);
+                dirty = true;
+            }
+        }
+    }
+
+    private void readLegacyColors(JsonObject legacyObject) {
+        Map<String, String> raw = GSON.fromJson(legacyObject, TYPE);
+        if (raw != null) {
+            readLegacyColors(raw);
+        }
+    }
+
+    private void readLegacyColors(Map<String, String> raw) {
+        for (Map.Entry<String, String> entry : raw.entrySet()) {
+            String category = entry.getKey();
+            String value = entry.getValue();
+            if (category == null || value == null) {
+                continue;
+            }
+            try {
+                int color = parseColor(value.trim());
+                colors.put(category, color & 0xFFFFFF);
+            } catch (NumberFormatException e) {
+                GLights.LOGGER.warn("Ignoring malformed color '{}' for category '{}'", value, category);
+                dirty = true;
+            }
+        }
+    }
+
+    private void readSettings(JsonObject settingsObject) {
+        settings.damageEffect = getBoolean(settingsObject, "damageEffect", settings.damageEffect);
+        settings.underwaterEffect = getBoolean(settingsObject, "underwaterEffect", settings.underwaterEffect);
+        settings.poisonEffect = getBoolean(settingsObject, "poisonEffect", settings.poisonEffect);
+        settings.frozenEffect = getBoolean(settingsObject, "frozenEffect", settings.frozenEffect);
+        settings.hotbarAlwaysVisible = getBoolean(settingsObject, "hotbarAlwaysVisible", settings.hotbarAlwaysVisible);
+        settings.highlightSelectedSlot = getBoolean(settingsObject, "highlightSelectedSlot", settings.highlightSelectedSlot);
+    }
+
+    private static boolean getBoolean(JsonObject object, String key, boolean defaultValue) {
+        if (object == null || !object.has(key)) {
+            return defaultValue;
+        }
+        JsonElement element = object.get(key);
+        if (element == null || !element.isJsonPrimitive()) {
+            return defaultValue;
+        }
+        try {
+            return element.getAsBoolean();
+        } catch (ClassCastException | IllegalStateException e) {
+            return defaultValue;
+        }
+    }
+
+    public boolean isDamageEffectEnabled() {
+        return settings.damageEffect;
+    }
+
+    public void setDamageEffectEnabled(boolean enabled) {
+        if (settings.damageEffect != enabled) {
+            settings.damageEffect = enabled;
+            dirty = true;
+        }
+    }
+
+    public boolean isUnderwaterEffectEnabled() {
+        return settings.underwaterEffect;
+    }
+
+    public void setUnderwaterEffectEnabled(boolean enabled) {
+        if (settings.underwaterEffect != enabled) {
+            settings.underwaterEffect = enabled;
+            dirty = true;
+        }
+    }
+
+    public boolean isPoisonEffectEnabled() {
+        return settings.poisonEffect;
+    }
+
+    public void setPoisonEffectEnabled(boolean enabled) {
+        if (settings.poisonEffect != enabled) {
+            settings.poisonEffect = enabled;
+            dirty = true;
+        }
+    }
+
+    public boolean isFrozenEffectEnabled() {
+        return settings.frozenEffect;
+    }
+
+    public void setFrozenEffectEnabled(boolean enabled) {
+        if (settings.frozenEffect != enabled) {
+            settings.frozenEffect = enabled;
+            dirty = true;
+        }
+    }
+
+    public boolean isHotbarAlwaysVisible() {
+        return settings.hotbarAlwaysVisible;
+    }
+
+    public void setHotbarAlwaysVisible(boolean enabled) {
+        if (settings.hotbarAlwaysVisible != enabled) {
+            settings.hotbarAlwaysVisible = enabled;
+            dirty = true;
+        }
+    }
+
+    public boolean isHighlightSelectedSlot() {
+        return settings.highlightSelectedSlot;
+    }
+
+    public void setHighlightSelectedSlot(boolean enabled) {
+        if (settings.highlightSelectedSlot != enabled) {
+            settings.highlightSelectedSlot = enabled;
+            dirty = true;
+        }
     }
 }

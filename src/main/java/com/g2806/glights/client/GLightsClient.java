@@ -61,6 +61,7 @@ public final class GLightsClient implements ClientModInitializer {
 
         ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(listener);
 
+        CONFIG.saveIfDirty();
         GLights.LOGGER.info("GLights client services initialized");
     }
 }

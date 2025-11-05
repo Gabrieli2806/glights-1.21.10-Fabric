@@ -27,6 +27,7 @@ public final class EventHandler {
     private final int[] hotbarScanCodes = new int[9];
 
     private boolean hotbarInitialized;
+    private boolean hotbarPrimed;
     private boolean windowFocused = true;
     private boolean dead;
     private int lastSelectedSlot = -1;
@@ -38,6 +39,7 @@ public final class EventHandler {
         this.handler = handler;
         this.config = config;
         Arrays.fill(hotbarScanCodes, -1);
+        hotbarPrimed = false;
 
         handler.addRestartCallback(this::onHandlerRestart);
     }
@@ -89,6 +91,9 @@ public final class EventHandler {
 
     private void ensureHotbarCodes() {
         if (hotbarInitialized) {
+            if (config.isHotbarAlwaysVisible() && !hotbarPrimed) {
+                refreshHotbarBaseColors();
+            }
             return;
         }
         KeyMapping[] bindings = client.options.keyHotbarSlots;
@@ -96,6 +101,9 @@ public final class EventHandler {
             hotbarScanCodes[i] = handler.resolveScanCode(bindings[i]);
         }
         hotbarInitialized = true;
+        if (config.isHotbarAlwaysVisible()) {
+            refreshHotbarBaseColors();
+        }
     }
 
     private void handleDeathState(LocalPlayer player) {
@@ -113,7 +121,18 @@ public final class EventHandler {
     }
 
     private void handleSelectedSlot(LocalPlayer player) {
-    int slot = player.getInventory().getSelectedSlot();
+        if (!config.isHighlightSelectedSlot()) {
+            if (lastSelectedSlot >= 0) {
+                int previousCode = hotbarScanCodes[lastSelectedSlot];
+                if (previousCode > 0) {
+                    handler.setSolidColorOnScanCode(previousCode, config.getColorForCategory(ConfigManager.CATEGORY_INVENTORY));
+                }
+                lastSelectedSlot = -1;
+            }
+            return;
+        }
+
+        int slot = player.getInventory().getSelectedSlot();
         if (slot < 0 || slot >= hotbarScanCodes.length) {
             return;
         }
@@ -138,6 +157,7 @@ public final class EventHandler {
         dead = false;
         lastSelectedSlot = -1;
         hotbarInitialized = false;
+        hotbarPrimed = false;
         Arrays.fill(hotbarScanCodes, -1);
         clearSpecialEffects(false);
         if (this.handler.isActive()) {
@@ -152,11 +172,13 @@ public final class EventHandler {
         }
         lastSelectedSlot = -1;
         hotbarInitialized = false;
+        hotbarPrimed = false;
         Arrays.fill(hotbarScanCodes, -1);
     }
 
     private void onHandlerRestart() {
         hotbarInitialized = false;
+        hotbarPrimed = false;
         lastSelectedSlot = -1;
         Arrays.fill(hotbarScanCodes, -1);
         if (activeEffect != SpecialEffect.NONE) {
@@ -169,10 +191,12 @@ public final class EventHandler {
     }
 
     private void updateSpecialEffects(LocalPlayer player) {
-        if (player.hurtTime > 0) {
+        if (config.isDamageEffectEnabled() && player.hurtTime > 0) {
             damageFlashTicks = 12;
-        } else if (damageFlashTicks > 0) {
+        } else if (damageFlashTicks > 0 && config.isDamageEffectEnabled()) {
             damageFlashTicks--;
+        } else if (!config.isDamageEffectEnabled()) {
+            damageFlashTicks = 0;
         }
 
         SpecialEffect desired = determineDesiredEffect(player);
@@ -182,16 +206,16 @@ public final class EventHandler {
     }
 
     private SpecialEffect determineDesiredEffect(LocalPlayer player) {
-        if (damageFlashTicks > 0) {
+        if (config.isDamageEffectEnabled() && damageFlashTicks > 0) {
             return SpecialEffect.DAMAGE_FLASH;
         }
-        if (player.hasEffect(MobEffects.POISON)) {
+        if (config.isPoisonEffectEnabled() && player.hasEffect(MobEffects.POISON)) {
             return SpecialEffect.POISON;
         }
-        if (player.getTicksFrozen() > 0) {
+        if (config.isFrozenEffectEnabled() && player.getTicksFrozen() > 0) {
             return SpecialEffect.FROZEN;
         }
-        if (player.isUnderWater()) {
+        if (config.isUnderwaterEffectEnabled() && player.isUnderWater()) {
             return SpecialEffect.UNDERWATER;
         }
         return SpecialEffect.NONE;
@@ -205,6 +229,7 @@ public final class EventHandler {
 
         handler.stopEffects();
 
+        hotbarPrimed = false;
         switch (effect) {
             case DAMAGE_FLASH:
                 handler.setFlashingColor(0xFF0000, 200);
@@ -221,6 +246,7 @@ public final class EventHandler {
             case NONE:
                 if (restoreBaseAfterNone) {
                     handler.initBaseLighting();
+                    refreshHotbarBaseColors();
                     resetHotbarHighlight();
                 }
                 break;
@@ -236,11 +262,43 @@ public final class EventHandler {
         } else if (restoreBase) {
             handler.stopEffects();
             handler.initBaseLighting();
+            refreshHotbarBaseColors();
             resetHotbarHighlight();
         }
     }
 
     private void resetHotbarHighlight() {
+        if (!config.isHighlightSelectedSlot()) {
+            return;
+        }
+        if (lastSelectedSlot < 0 || lastSelectedSlot >= hotbarScanCodes.length) {
+            return;
+        }
+        int code = hotbarScanCodes[lastSelectedSlot];
+        if (code > 0) {
+            handler.setSolidColorOnScanCode(code, config.getColorForCategory(ConfigManager.CATEGORY_INVENTORY_SELECTED));
+        }
+    }
+
+    private void refreshHotbarBaseColors() {
+        if (!config.isHotbarAlwaysVisible() || !handler.isActive()) {
+            hotbarPrimed = false;
+            return;
+        }
+        int baseColor = config.getColorForCategory(ConfigManager.CATEGORY_INVENTORY);
+        for (int code : hotbarScanCodes) {
+            if (code > 0) {
+                handler.setSolidColorOnScanCode(code, baseColor);
+            }
+        }
+        hotbarPrimed = true;
+    }
+
+    public void onConfigChanged() {
+        hotbarInitialized = false;
+        hotbarPrimed = false;
         lastSelectedSlot = -1;
+        Arrays.fill(hotbarScanCodes, -1);
+        clearSpecialEffects(true);
     }
 }

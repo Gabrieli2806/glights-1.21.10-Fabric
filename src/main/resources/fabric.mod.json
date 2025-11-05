@@ -19,6 +19,9 @@
 		],
 		"client": [
 			"com.g2806.glights.client.GLightsClient"
+		],
+		"modmenu": [
+			"com.g2806.glights.client.config.ModMenuIntegration"
 		]
 	},
 	"mixins": [
@@ -28,6 +31,8 @@
 		"fabricloader": "*",
 		"minecraft": "~1.21.10",
 		"java": ">=21",
-		"fabric-api": "*"
+		"fabric-api": "*",
+		"cloth-config2": "*",
+		"modmenu": "*"
 	}
 }
