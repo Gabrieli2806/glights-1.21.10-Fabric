@@ -54,12 +54,6 @@ public final class ModMenuIntegration implements ModMenuApi {
 
         ConfigCategory hotbar = builder.getOrCreateCategory(Component.translatable("config.glights.category.hotbar"));
         hotbar.addEntry(entryBuilder
-                .startBooleanToggle(Component.translatable("config.glights.hotbar.always_visible"), config.isHotbarAlwaysVisible())
-                .setDefaultValue(true)
-                .setTooltip(Component.translatable("config.glights.hotbar.always_visible.tooltip"))
-                .setSaveConsumer(config::setHotbarAlwaysVisible)
-                .build());
-        hotbar.addEntry(entryBuilder
                 .startBooleanToggle(Component.translatable("config.glights.hotbar.highlight_selected"), config.isHighlightSelectedSlot())
                 .setDefaultValue(true)
                 .setTooltip(Component.translatable("config.glights.hotbar.highlight_selected.tooltip"))
