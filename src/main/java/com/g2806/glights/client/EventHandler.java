@@ -73,6 +73,10 @@ public final class EventHandler {
     private void onClientTick(Minecraft ignored) {
         handleFocus();
 
+        if (!config.isModEnabled()) {
+            return;
+        }
+
         if (!handler.isActive()) {
             return;
         }
@@ -104,6 +108,10 @@ public final class EventHandler {
             resetFunctionKeyLighting();
             handler.shutdown(true);
         } else if (!windowFocused && focused) {
+            if (!config.isModEnabled()) {
+                windowFocused = true;
+                return;
+            }
             if (handler.restart(true)) {
                 windowFocused = true;
                 if (dead) {
@@ -590,8 +598,22 @@ public final class EventHandler {
         lastSelectedSlot = -1;
         Arrays.fill(hotbarScanCodes, -1);
         Arrays.fill(hotbarLogiKeys, -1);
-        clearSpecialEffects(true);
         resetFunctionKeyLighting();
+
+        if (!config.isModEnabled()) {
+            clearSpecialEffects(false);
+            if (handler.isActive()) {
+                handler.stopEffects();
+                handler.shutdown(true);
+            }
+            return;
+        }
+
+        if (!handler.isActive()) {
+            handler.restart(true);
+        }
+
+        clearSpecialEffects(true);
     }
 
     private boolean isWaitingForNether(LocalPlayer player) {

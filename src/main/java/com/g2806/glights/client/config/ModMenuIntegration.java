@@ -24,7 +24,15 @@ public final class ModMenuIntegration implements ModMenuApi {
                 .setParentScreen(parent)
                 .setTitle(Component.translatable("config.glights.title"));
 
-        ConfigEntryBuilder entryBuilder = builder.entryBuilder();
+    ConfigEntryBuilder entryBuilder = builder.entryBuilder();
+
+    ConfigCategory general = builder.getOrCreateCategory(Component.translatable("config.glights.category.general"));
+    general.addEntry(entryBuilder
+        .startBooleanToggle(Component.translatable("config.glights.general.enabled"), config.isModEnabled())
+        .setDefaultValue(true)
+        .setTooltip(Component.translatable("config.glights.general.enabled.tooltip"))
+        .setSaveConsumer(config::setModEnabled)
+        .build());
 
     ConfigCategory effects = builder.getOrCreateCategory(Component.translatable("config.glights.category.effects"));
     effects.addEntry(entryBuilder

@@ -65,6 +65,7 @@ public final class ConfigManager {
         boolean netherPortalEffect = true;
         boolean witherEffect = true;
         boolean lowHealthBlink = true;
+        boolean modEnabled = true;
         boolean backgroundFillEnabled = false;
         boolean mouseLightingEnabled = true;
         boolean highlightSelectedSlot = true;
@@ -77,6 +78,7 @@ public final class ConfigManager {
             netherPortalEffect = true;
             witherEffect = true;
             lowHealthBlink = true;
+            modEnabled = true;
             backgroundFillEnabled = false;
             mouseLightingEnabled = true;
             highlightSelectedSlot = true;
@@ -186,6 +188,7 @@ public final class ConfigManager {
         settingsObject.addProperty("netherPortalEffect", settings.netherPortalEffect);
     settingsObject.addProperty("witherEffect", settings.witherEffect);
     settingsObject.addProperty("lowHealthBlink", settings.lowHealthBlink);
+    settingsObject.addProperty("modEnabled", settings.modEnabled);
         settingsObject.addProperty("backgroundFillEnabled", settings.backgroundFillEnabled);
     settingsObject.addProperty("mouseLightingEnabled", settings.mouseLightingEnabled);
         settingsObject.addProperty("highlightSelectedSlot", settings.highlightSelectedSlot);
@@ -273,6 +276,7 @@ public final class ConfigManager {
         settings.netherPortalEffect = getBoolean(settingsObject, "netherPortalEffect", settings.netherPortalEffect);
         settings.witherEffect = getBoolean(settingsObject, "witherEffect", settings.witherEffect);
         settings.lowHealthBlink = getBoolean(settingsObject, "lowHealthBlink", settings.lowHealthBlink);
+        settings.modEnabled = getBoolean(settingsObject, "modEnabled", settings.modEnabled);
         settings.backgroundFillEnabled = getBoolean(settingsObject, "backgroundFillEnabled", settings.backgroundFillEnabled);
         settings.mouseLightingEnabled = getBoolean(settingsObject, "mouseLightingEnabled", settings.mouseLightingEnabled);
         settings.highlightSelectedSlot = getBoolean(settingsObject, "highlightSelectedSlot", settings.highlightSelectedSlot);
@@ -435,6 +439,17 @@ public final class ConfigManager {
     public void setLowHealthBlinkEnabled(boolean enabled) {
         if (settings.lowHealthBlink != enabled) {
             settings.lowHealthBlink = enabled;
+            dirty = true;
+        }
+    }
+
+    public boolean isModEnabled() {
+        return settings.modEnabled;
+    }
+
+    public void setModEnabled(boolean enabled) {
+        if (settings.modEnabled != enabled) {
+            settings.modEnabled = enabled;
             dirty = true;
         }
     }

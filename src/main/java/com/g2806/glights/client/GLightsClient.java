@@ -41,8 +41,12 @@ public final class GLightsClient implements ClientModInitializer {
         EVENTS = new EventHandler(client, HANDLER, CONFIG);
         EVENTS.register();
 
+        if (!CONFIG.isModEnabled() && HANDLER.isActive()) {
+            HANDLER.shutdown(true);
+        }
+
         ClientLifecycleEvents.CLIENT_STARTED.register(mc -> {
-            if (HANDLER != null && HANDLER.isActive()) {
+            if (HANDLER != null && CONFIG.isModEnabled() && HANDLER.isActive()) {
                 HANDLER.initBaseLighting();
             }
         });

@@ -1,5 +1,8 @@
 {
   "config.glights.title": "GLights Settings",
+  "config.glights.category.general": "General",
+  "config.glights.general.enabled": "Enable GLights",
+  "config.glights.general.enabled.tooltip": "Toggle the Logitech lighting integration on or off without restarting the game.",
   "config.glights.category.effects": "Lighting Effects",
   "config.glights.effect.damage": "Damage flash",
   "config.glights.effect.damage.tooltip": "Blink the keyboard red when you take damage.",
