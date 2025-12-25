@@ -34,8 +34,8 @@ dependencies {
 	// Mod Menu integration
 	modImplementation("com.terraformersmc:modmenu:${project.modmenu_version}")
 
-	// Cloth Config for 1.21.9 (without AutoConfig)
-	modImplementation "me.shedaniel.cloth:cloth-config-fabric:20.0.148"
+	// Cloth Config for 1.21.11 (without AutoConfig)
+	modImplementation "me.shedaniel.cloth:cloth-config-fabric:21.11.153"
 }
 
 processResources {

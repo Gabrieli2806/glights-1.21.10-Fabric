@@ -8,7 +8,7 @@ import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
 
@@ -58,8 +58,8 @@ public final class GLightsClient implements ClientModInitializer {
             }
 
             @Override
-            public ResourceLocation getFabricId() {
-                return ResourceLocation.fromNamespaceAndPath(GLights.MOD_ID, "light_handler");
+            public Identifier getFabricId() {
+                return Identifier.fromNamespaceAndPath(GLights.MOD_ID, "light_handler");
             }
         };
 
